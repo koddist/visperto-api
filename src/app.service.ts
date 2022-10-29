@@ -1,22 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
+import { InjectConnection, InjectModel } from "@nestjs/mongoose";
+import { VisaCountry, VisaCountryDocument } from "./schemas/visa_country.schema";
+import { Connection, Model } from "mongoose";
+import { VisaCountryDto } from "./dto/visa_country.dto";
+
+export enum VisaCountriesEnum {
+    VISA_COUNTRIES_DB_COLLECTION = 'visa_countries',
+    LENGTH_OF_COUNTRIES = 10,
+    TEST_COUNTRY = 'Israel',
+    TEST_TRAVEL_TO_COUNTRY = 'Iran',
+    TEST_VISA_STATUS = 'not admitted'
+}
 
 @Injectable()
 export class AppService {
 
+    constructor(
+        @InjectModel(VisaCountry.name) private readonly visaCountryModel: Model<VisaCountryDocument>,
+        @InjectConnection() private connection: Connection
+    ) {}
+
     public async getUrls(): Promise<string[]> {
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
+
         await page.goto('https://www.passportindex.org', {waitUntil: 'networkidle2'});
 
         return await page.evaluate(() => {
-            const passports = Array.from(document.querySelector('#passports').children);
+            const passportsList = Array.from(document.querySelector('#passports').children).slice(75, 85); // @TODO remove slice
+            const passportDashboardButton = document.querySelector('.psprt-view-dashboard');
             const links = [];
 
-            passports.forEach(pass => {
+            passportsList.forEach(pass => {
                 (pass.childNodes[0] as HTMLAnchorElement).click();
-                if (document.querySelector('.psprt-view-dashboard')) {
-                    links.push((document.querySelector('.psprt-view-dashboard') as HTMLAnchorElement).href);
+                if (passportDashboardButton) {
+                    links.push((passportDashboardButton as HTMLAnchorElement).href);
                 }
             })
 
@@ -26,9 +45,54 @@ export class AppService {
         });
     }
 
+    private validateCountryData(
+        countries: VisaCountryDto[],
+        countryName: string,
+        travelToCountry: string,
+        visaStatus: 'not admitted' | 'visa required'
+    ) {
+        return countries
+            .filter(country => country.name === countryName)[0].visa_requirements
+            .filter(travel => travel.country === travelToCountry)[0].visa
+            .includes(visaStatus);
+    }
+
+    public async getVisaReqByUrl(url) {
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage()
+
+        await page.goto(url, {waitUntil: 'networkidle2'});
+
+        return await page.evaluate(() => {
+            const countryName = document.querySelector('.psprt-dashboard-title').childNodes[1].childNodes[2].textContent;
+            const visaReqsTable = document.querySelector('.psprt-dashboard-table tbody').children;
+
+            const visaCountry = {
+                name: countryName,
+                visa_requirements: []
+            }
+
+            Array
+                .from(visaReqsTable)
+                //.slice(0, 5) // @TODO remove slice
+                .forEach(country => {
+                    const visaReqs = {
+                        country: (country.childNodes[0] as HTMLElement).children[1].textContent,
+                        visa: country.childNodes[1].textContent.split(/""|\/|days|day/).map(i => i.trim()).filter(c => c !== '').filter(i => isNaN(Number(i))),
+                        days: Number(country.childNodes[1].textContent.split(/""|\/|days|day/).map(i => i.trim()).filter(c => c !== '').filter(i => !isNaN(Number(i)))[0])
+                    }
+                    visaCountry.visa_requirements.push(visaReqs);
+                })
+
+            return visaCountry;
+        }).finally(() => {
+            browser.close();
+        })
+    }
+
     public async getAllVisaReqs() {
         const urls = await this.getUrls();
-        const countries = [];
+        const countries: VisaCountryDto[] = [];
 
         return new Promise(async resolve => {
             for (const url of urls) {
@@ -44,31 +108,25 @@ export class AppService {
         })
     }
 
-    public async getVisaReqByUrl(url) {
-        const browser = await puppeteer.launch();
-        const page = await browser.newPage();
-        await page.goto(url, {waitUntil: 'networkidle2'});
+    public async updateCountriesData() {
+        await this.getAllVisaReqs()
+            .then((countries) => {
+                const isCountriesLengthEqual = countries.length === VisaCountriesEnum.LENGTH_OF_COUNTRIES;
+                const isVisaStatusExist = this.validateCountryData(
+                    countries,
+                    VisaCountriesEnum.TEST_COUNTRY,
+                    VisaCountriesEnum.TEST_TRAVEL_TO_COUNTRY,
+                    VisaCountriesEnum.TEST_VISA_STATUS);
 
-        return await page.evaluate(() => {
-            const visaCountry = {
-                name: document.querySelector('.psprt-dashboard-title').childNodes[1].childNodes[2].textContent,
-                visa_requirements: []
-            }
-
-            Array
-                .from(document.querySelector('.psprt-dashboard-table tbody').children)
-                .forEach(country => {
-                    const visaReqs = {
-                        country: (country.childNodes[0] as HTMLElement).children[1].textContent,
-                        visa: country.childNodes[1].textContent.split(/""|\/|days|day/).map(i => i.trim()).filter(c => c !== '').filter(i => isNaN(Number(i))),
-                        days: Number(country.childNodes[1].textContent.split(/""|\/|days|day/).map(i => i.trim()).filter(c => c !== '').filter(i => !isNaN(Number(i)))[0])
-                    }
-                    visaCountry.visa_requirements.push(visaReqs);
-                })
-
-            return visaCountry;
-        }).finally(() => {
-            browser.close();
-        })
+                if (isCountriesLengthEqual && isVisaStatusExist) {
+                    this.connection.db.dropCollection(VisaCountriesEnum.VISA_COUNTRIES_DB_COLLECTION)
+                        .then(() => {
+                            countries.forEach(async (country: VisaCountryDto) => {
+                                const countryData = new this.visaCountryModel(country);
+                                return await countryData.save()
+                            })
+                        });
+                }
+            })
     }
 }
