@@ -4,6 +4,7 @@ import { InjectConnection, InjectModel } from "@nestjs/mongoose";
 import { VisaCountry, VisaCountryDocument } from "./schemas/visa_country.schema";
 import { Connection, Model } from "mongoose";
 import { VisaCountryDto } from "./dto/visa_country.dto";
+import { Cron } from "@nestjs/schedule";
 
 export enum VisaCountriesEnum {
     VISA_COUNTRIES_DB_COLLECTION = 'visa_countries',
@@ -78,8 +79,16 @@ export class AppService {
                 .forEach(country => {
                     const visaReqs = {
                         country: (country.childNodes[0] as HTMLElement).children[1].textContent,
-                        visa: country.childNodes[1].textContent.split(/""|\/|days|day/).map(i => i.trim()).filter(c => c !== '').filter(i => isNaN(Number(i))),
-                        days: Number(country.childNodes[1].textContent.split(/""|\/|days|day/).map(i => i.trim()).filter(c => c !== '').filter(i => !isNaN(Number(i)))[0])
+                        visa: country.childNodes[1].textContent
+                            .split(/""|\/|days|day/)
+                            .map(i => i.trim())
+                            .filter(c => c !== '')
+                            .filter(i => isNaN(Number(i))),
+                        days: Number(country.childNodes[1].textContent
+                            .split(/""|\/|days|day/)
+                            .map(i => i.trim())
+                            .filter(c => c !== '')
+                            .filter(i => !isNaN(Number(i)))[0])
                     }
                     visaCountry.visa_requirements.push(visaReqs);
                 })
@@ -108,6 +117,11 @@ export class AppService {
         })
     }
 
+    // Every year at 03:00 on day-of-month 1 in July and January.
+    @Cron('00 03 1 7,1 *', {
+        name: 'update_visa_requirements',
+        timeZone: 'Europe/Paris'
+    })
     public async updateCountriesData() {
         await this.getAllVisaReqs()
             .then((countries) => {
