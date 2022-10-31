@@ -7,7 +7,6 @@ export class AppController {
 
   @Get()
   getCountries() {
-    // return this.appService.getAllVisaReqs();
     return this.appService.updateCountriesData();
   }
 }
