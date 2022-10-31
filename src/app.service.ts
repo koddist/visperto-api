@@ -7,8 +7,7 @@ import { VisaCountryDto } from "./dto/visa_country.dto";
 import { Cron } from "@nestjs/schedule";
 
 export enum VisaCountriesEnum {
-    VISA_COUNTRIES_DB_COLLECTION = 'visa_countries',
-    LENGTH_OF_COUNTRIES = 10,
+    LENGTH_OF_COUNTRIES = 199,
     TEST_COUNTRY = 'Israel',
     TEST_TRAVEL_TO_COUNTRY = 'Iran',
     TEST_VISA_STATUS = 'not admitted'
@@ -26,10 +25,13 @@ export class AppService {
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
 
-        await page.goto('https://www.passportindex.org', {waitUntil: 'networkidle2'});
+        await page.goto(
+            'https://www.passportindex.org',
+            { waitUntil: 'networkidle2' });
 
         return await page.evaluate(() => {
-            const passportsList = Array.from(document.querySelector('#passports').children).slice(75, 85); // @TODO remove slice
+            const passportsList = Array.from(document.querySelector('#passports').children)
+              .slice(75, 85); // @TODO remove slice
             const passportDashboardButton = document.querySelector('.psprt-view-dashboard');
             const links = [];
 
@@ -75,7 +77,6 @@ export class AppService {
 
             Array
                 .from(visaReqsTable)
-                //.slice(0, 5) // @TODO remove slice
                 .forEach(country => {
                     const visaReqs = {
                         country: (country.childNodes[0] as HTMLElement).children[1].textContent,
@@ -133,7 +134,7 @@ export class AppService {
                     VisaCountriesEnum.TEST_VISA_STATUS);
 
                 if (isCountriesLengthEqual && isVisaStatusExist) {
-                    this.connection.db.dropCollection(VisaCountriesEnum.VISA_COUNTRIES_DB_COLLECTION)
+                    this.connection.db.dropCollection(process.env.MONGODB_COLLECTION)
                         .then(() => {
                             countries.forEach(async (country: VisaCountryDto) => {
                                 const countryData = new this.visaCountryModel(country);
