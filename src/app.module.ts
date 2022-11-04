@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { VisaRequirementsService } from './services/visa-requirements.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { VisaCountry, VisaCountrySchema } from "./schemas/visa_country.schema";
 import { MongooseModuleOptions } from "@nestjs/mongoose/dist/interfaces/mongoose-options.interface";
@@ -17,7 +17,7 @@ import { ConfigModule } from "@nestjs/config";
       ConfigModule.forRoot()
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [VisaRequirementsService],
 })
 export class AppModule {
 }
