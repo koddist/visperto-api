@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from "@nestjs/common";
 import * as puppeteer from 'puppeteer';
 import { InjectConnection, InjectModel } from "@nestjs/mongoose";
-import { VisaCountry, VisaCountryDocument } from "./schemas/visa_country.schema";
+import { VisaCountry, VisaCountryDocument } from "../schemas/visa_country.schema";
 import { Connection, Model } from "mongoose";
-import { VisaCountryDto } from "./dto/visa_country.dto";
+import { VisaCountryDto } from "../dto/visa_country.dto";
 import { Cron } from "@nestjs/schedule";
 
 export enum VisaCountriesEnum {
@@ -14,7 +14,7 @@ export enum VisaCountriesEnum {
 }
 
 @Injectable()
-export class AppService {
+export class VisaRequirementsService {
 
     constructor(
         @InjectModel(VisaCountry.name) private readonly visaCountryModel: Model<VisaCountryDocument>,
@@ -143,5 +143,13 @@ export class AppService {
                         });
                 }
             })
+    }
+
+    public async getCountries() {
+        return this.visaCountryModel.distinct('name').then((countries) => {
+            countries.forEach(country => {
+
+            })
+        });
     }
 }

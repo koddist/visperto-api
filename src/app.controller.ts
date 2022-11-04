@@ -1,12 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { VisaRequirementsService } from './services/visa-requirements.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly appService: VisaRequirementsService) {}
 
   @Get()
   getCountries() {
-    return this.appService.updateCountriesData();
+    return this.appService.getCountries();
   }
 }
