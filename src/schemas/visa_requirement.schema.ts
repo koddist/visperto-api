@@ -5,14 +5,15 @@ export type VisaRequirementDocument = VisaRequirement & Document;
 
 @Schema()
 export class VisaRequirement extends Document {
-    @Prop({ required: true })
-    country: string;
+  @Prop({ required: true })
+  country: string;
 
-    @Prop([String])
-    visa: string[];
+  @Prop([String])
+  visa: string[];
 
-    @Prop({ default: 0 })
-    days: number;
+  @Prop({ default: 0 })
+  days: number;
 }
 
-export const VisaRequirementSchema = SchemaFactory.createForClass(VisaRequirement);
+export const VisaRequirementSchema =
+  SchemaFactory.createForClass(VisaRequirement);

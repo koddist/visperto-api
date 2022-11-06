@@ -1,13 +1,13 @@
-import { IsArray, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsArray, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class VisaRequirementDto {
-    @IsString()
-    @IsNotEmpty()
-    readonly country: string;
+  @IsString()
+  @IsNotEmpty()
+  readonly country: string;
 
-    @IsArray()
-    readonly visa: string[];
+  @IsArray()
+  readonly visa: string[];
 
-    @IsNumber()
-    readonly days: number;
+  @IsNumber()
+  readonly days: number;
 }
