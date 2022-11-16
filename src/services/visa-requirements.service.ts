@@ -1,27 +1,29 @@
-import { Injectable } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
+import { map } from 'rxjs';
+import { Cron } from '@nestjs/schedule';
+import { Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
+import { Country, CountryDocument } from '../schemas/country.schema';
 import {
   VisaCountry,
   VisaCountryDocument,
 } from '../schemas/visa_country.schema';
-import { Connection, Model } from 'mongoose';
 import { VisaCountryDto } from '../dto/visa_country.dto';
-import { Cron } from '@nestjs/schedule';
-
-export enum VisaCountriesEnum {
-  LENGTH_OF_COUNTRIES = 199,
-  TEST_COUNTRY = 'Israel',
-  TEST_TRAVEL_TO_COUNTRY = 'Iran',
-  TEST_VISA_STATUS = 'not admitted',
-}
+import { HttpService } from '@nestjs/axios';
+import { VisaCountriesEnum } from '../enum/visa-countries.enum';
+import { CountryNamesFix } from '../enum/country-names-fix';
+import { Islands } from '../enum/islands-list';
 
 @Injectable()
 export class VisaRequirementsService {
   constructor(
     @InjectModel(VisaCountry.name)
     private readonly visaCountryModel: Model<VisaCountryDocument>,
+    @InjectModel(Country.name)
+    private readonly countryModel: Model<CountryDocument>,
     @InjectConnection() private connection: Connection,
+    private readonly httpService: HttpService,
   ) {}
 
   public async getUrls(): Promise<string[]> {
@@ -36,7 +38,7 @@ export class VisaRequirementsService {
       .evaluate(() => {
         const passportsList = Array.from(
           document.querySelector('#passports').children,
-        ).slice(75, 85); // @TODO remove slice
+        );
         const passportDashboardButton = document.querySelector(
           '.psprt-view-dashboard',
         );
@@ -70,7 +72,15 @@ export class VisaRequirementsService {
       .visa.includes(visaStatus);
   }
 
-  public async getVisaReqByUrl(url) {
+  private fixCountryName(countryName: string): string {
+    const correctedName = CountryNamesFix.filter((country) =>
+      country.alternatives.includes(countryName),
+    );
+
+    return correctedName.length > 0 ? correctedName[0].standard : countryName;
+  }
+
+  public async getVisaReqByUrl(url: string) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
@@ -163,9 +173,44 @@ export class VisaRequirementsService {
     });
   }
 
-  public async getCountries() {
-    return this.visaCountryModel.distinct('name').then((countries) => {
-      countries.forEach((country) => {});
-    });
+  public async getCountries(): Promise<any> {
+    const visaCountries: string[] = await this.visaCountryModel
+      .distinct('name')
+      .then((countries) => {
+        return countries.map((country) => this.fixCountryName(country));
+      });
+
+    const fixCountryName = (countriesData) => {
+      return countriesData.data.map((countryData) => {
+        return {
+          ...countryData,
+          name: {
+            common: this.fixCountryName(countryData.name.common),
+          },
+        };
+      });
+    };
+
+    return this.httpService.get(VisaCountriesEnum.REST_COUNTRIES_API_URL).pipe(
+      map(async (res) => {
+        const fixedNames = fixCountryName(res);
+
+        const countriesData = await fixedNames.filter((countryData) => {
+          return [countryData.name.common, countryData.name.official].some(
+            (country) =>
+              visaCountries.includes(country) &&
+              !Islands.includes(countryData.name.common),
+          );
+        });
+
+        await this.countryModel.insertMany(countriesData, (error, result) => {
+          if (error) {
+            return error;
+          } else {
+            return result;
+          }
+        });
+      }),
+    );
   }
 }

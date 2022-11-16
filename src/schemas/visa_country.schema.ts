@@ -13,7 +13,7 @@ export class VisaCountry extends Document {
   name: string;
 
   @Prop([{ type: VisaRequirementSchema, required: true, _id: false }])
-  visa_requirements: VisaRequirementDocument[];
+  visa_requirements: VisaRequirementDocument[]; // @TODO change property name to "visaRequirements"
 }
 
 export const VisaCountrySchema = SchemaFactory.createForClass(VisaCountry);
