@@ -1,5 +1,6 @@
 import { Prop, raw, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
+import { VisaCountryDocument } from './visa_country.schema';
 
 export type CountryDocument = Country & Document;
 
@@ -9,15 +10,12 @@ export class Country extends Document {
     raw({
       common: { type: String },
       official: { type: String },
-      nativeName: {
-        eng: {
-          official: { type: String },
-          common: { type: String },
-        },
-      },
     }),
   )
-  name: string;
+  name: Record<string, any>;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'VisaCountryDocument' })
+  visaRequirements: VisaCountryDocument;
 
   @Prop([String])
   tld: string[];
@@ -42,6 +40,34 @@ export class Country extends Document {
 
   @Prop()
   unMember: boolean;
+
+  @Prop({ type: MongooseSchema.Types.Mixed })
+  currencies: Record<string, any>;
+
+  @Prop(
+    raw({
+      root: { type: String },
+      suffixes: { type: [String] },
+    }),
+  )
+  idd: Record<string, any>;
+
+  @Prop([String])
+  capital: string[];
+
+  @Prop({ type: MongooseSchema.Types.Mixed })
+  languages: Record<string, any>;
+
+  @Prop([String])
+  timezones: string[];
+
+  @Prop(
+    raw({
+      png: { type: String },
+      svg: { type: String },
+    }),
+  )
+  flags: Record<string, any>;
 }
 
 export const CountrySchema = SchemaFactory.createForClass(Country);
