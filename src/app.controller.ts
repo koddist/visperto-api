@@ -7,6 +7,6 @@ export class AppController {
 
   @Get()
   getCountries() {
-    return this.appService.getCountries();
+    return this.appService.updateCountriesData();
   }
 }

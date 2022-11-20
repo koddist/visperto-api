@@ -66,7 +66,7 @@ export class VisaRequirementsService {
   ) {
     return countries
       .filter((country) => country.name === countryName)[0]
-      .visa_requirements.filter(
+      .visaRequirements.filter(
         (travel) => travel.country === travelToCountry,
       )[0]
       .visa.includes(visaStatus);
@@ -96,7 +96,7 @@ export class VisaRequirementsService {
 
         const visaCountry = {
           name: countryName,
-          visa_requirements: [],
+          visaRequirements: [],
         };
 
         Array.from(visaReqsTable).forEach((country) => {
@@ -116,7 +116,7 @@ export class VisaRequirementsService {
                 .filter((i) => !isNaN(Number(i)))[0],
             ),
           };
-          visaCountry.visa_requirements.push(visaReqs);
+          visaCountry.visaRequirements.push(visaReqs);
         });
 
         return visaCountry;
@@ -145,10 +145,10 @@ export class VisaRequirementsService {
   }
 
   // Every year at 03:00 on day-of-month 1 in July and January.
-  @Cron('00 03 1 7,1 *', {
-    name: 'update_visa_requirements',
-    timeZone: 'Europe/Paris',
-  })
+  // @Cron('00 03 1 7,1 *', {
+  //   name: 'update_visa_requirements',
+  //   timeZone: 'Europe/Paris',
+  // })
   public async updateCountriesData() {
     await this.getAllVisaReqs().then((countries) => {
       const isCountriesLengthEqual =

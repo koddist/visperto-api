@@ -7,13 +7,13 @@ import {
 
 export type VisaCountryDocument = VisaCountry & Document;
 
-@Schema({ collection: 'visa_countries' })
+@Schema({ collection: 'visaRequirements' })
 export class VisaCountry extends Document {
   @Prop({ index: true, required: true })
   name: string;
 
   @Prop([{ type: VisaRequirementSchema, required: true, _id: false }])
-  visa_requirements: VisaRequirementDocument[]; // @TODO change property name to "visaRequirements"
+  visaRequirements: VisaRequirementDocument[];
 }
 
 export const VisaCountrySchema = SchemaFactory.createForClass(VisaCountry);
