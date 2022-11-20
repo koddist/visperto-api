@@ -7,5 +7,5 @@ export class VisaCountryDto {
   readonly name: string;
 
   @IsArray()
-  readonly visa_requirements: VisaRequirementDto[];
+  readonly visaRequirements: VisaRequirementDto[];
 }

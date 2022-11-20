@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 
 export type VisaRequirementDocument = VisaRequirement & Document;
 
-@Schema()
+@Schema({ collection: 'visaRequirement' })
 export class VisaRequirement extends Document {
   @Prop({ required: true })
   country: string;
