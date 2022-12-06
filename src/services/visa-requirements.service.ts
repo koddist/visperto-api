@@ -145,36 +145,43 @@ export class VisaRequirementsService {
   }
 
   // Every year at 03:00 on day-of-month 1 in July and January.
-  // @Cron('00 03 1 7,1 *', {
-  //   name: 'update_visa_requirements',
-  //   timeZone: 'Europe/Paris',
-  // })
-  public async updateCountriesData() {
-    await this.getAllVisaReqs().then((countries) => {
-      const isCountriesLengthEqual =
-        countries.length === VisaCountriesEnum.LENGTH_OF_COUNTRIES;
-      const isVisaStatusExist = this.validateCountryData(
-        countries,
-        VisaCountriesEnum.TEST_COUNTRY,
-        VisaCountriesEnum.TEST_TRAVEL_TO_COUNTRY,
-        VisaCountriesEnum.TEST_VISA_STATUS,
-      );
+  @Cron('00 03 1 1,4,7,10 *', {
+    name: 'update_visa_requirements',
+    timeZone: 'Europe/Paris',
+  })
+  public async updateCountriesData(): Promise<any> {
+    return await this.getAllVisaReqs()
+      .then((countries) => {
+        const isCountriesLengthEqual =
+          countries.length === VisaCountriesEnum.LENGTH_OF_COUNTRIES;
+        const isVisaStatusExist = this.validateCountryData(
+          countries,
+          VisaCountriesEnum.TEST_COUNTRY,
+          VisaCountriesEnum.TEST_TRAVEL_TO_COUNTRY,
+          VisaCountriesEnum.TEST_VISA_STATUS,
+        );
 
-      if (isCountriesLengthEqual && isVisaStatusExist) {
-        this.connection.db
-          .dropCollection(process.env.MONGODB_COLLECTION)
-          .then(() => {
-            countries.forEach(async (country: VisaCountryDto) => {
-              const countryData = new this.visaCountryModel(country);
-              return await countryData.save();
-            });
-          });
-      }
-    });
+        if (isCountriesLengthEqual && isVisaStatusExist) {
+          return this.connection.db
+            .dropCollection(process.env.MONGODB_COLLECTION)
+            .then(() => {
+              return countries.forEach(async (country: VisaCountryDto) => {
+                const countryData = new this.visaCountryModel(country);
+                return await countryData.save();
+              });
+            })
+            .then(() =>
+              console.log('Countries data has been successfully updated.'),
+            );
+        }
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   }
 
   public async getCountries(): Promise<any> {
-    const visaCountries: string[] = await this.visaCountryModel
+    const countryNames: string[] = await this.visaCountryModel
       .distinct('name')
       .then((countries) => {
         return countries.map((country) => this.fixCountryName(country));
@@ -198,7 +205,7 @@ export class VisaRequirementsService {
         const countriesData = await fixedNames.filter((countryData) => {
           return [countryData.name.common, countryData.name.official].some(
             (country) =>
-              visaCountries.includes(country) &&
+              countryNames.includes(country) &&
               !Islands.includes(countryData.name.common),
           );
         });
