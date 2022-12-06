@@ -11,9 +11,10 @@ import { Country, CountrySchema } from './schemas/country.schema';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_CLOUD, {
-      dbName: process.env.MONGODB_DB,
-    } as MongooseModuleOptions),
+    MongooseModule.forRoot(
+      `mongodb://${process.env.MONGODB_USER}:${process.env.MONGODB_PASSWORD}@hafenhost.com:27017`,
+      { dbName: process.env.MONGODB_DB } as MongooseModuleOptions,
+    ),
     MongooseModule.forFeature([
       { name: VisaCountry.name, schema: VisaCountrySchema },
     ]),
