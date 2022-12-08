@@ -14,8 +14,8 @@ export class Country extends Document {
   )
   name: Record<string, any>;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'VisaCountryDocument' })
-  visaRequirements: VisaCountryDocument;
+  // @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'VisaCountryDocument' })
+  // visaRequirements: VisaCountryDocument;
 
   @Prop([String])
   tld: string[];

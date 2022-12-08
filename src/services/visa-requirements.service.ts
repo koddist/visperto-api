@@ -14,9 +14,12 @@ import { HttpService } from '@nestjs/axios';
 import { VisaCountriesEnum } from '../enum/visa-countries.enum';
 import { CountryNamesFix } from '../enum/country-names-fix';
 import { Islands } from '../enum/islands-list';
+import { Logtail } from '@logtail/node';
 
 @Injectable()
 export class VisaRequirementsService {
+  private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
+
   constructor(
     @InjectModel(VisaCountry.name)
     private readonly visaCountryModel: Model<VisaCountryDocument>,
@@ -70,14 +73,6 @@ export class VisaRequirementsService {
         (travel) => travel.country === travelToCountry,
       )[0]
       .visa.includes(visaStatus);
-  }
-
-  private fixCountryName(countryName: string): string {
-    const correctedName = CountryNamesFix.filter((country) =>
-      country.alternatives.includes(countryName),
-    );
-
-    return correctedName.length > 0 ? correctedName[0].standard : countryName;
   }
 
   public async getVisaReqByUrl(url: string) {
@@ -163,7 +158,7 @@ export class VisaRequirementsService {
 
         if (isCountriesLengthEqual && isVisaStatusExist) {
           return this.connection.db
-            .dropCollection(process.env.MONGODB_COLLECTION)
+            .dropCollection('visaRequirements')
             .then(() => {
               return countries.forEach(async (country: VisaCountryDto) => {
                 const countryData = new this.visaCountryModel(country);
@@ -171,28 +166,45 @@ export class VisaRequirementsService {
               });
             })
             .then(() =>
-              console.log('Countries data has been successfully updated.'),
+              this.logtail.info(
+                'Countries visa requirements data has been successfully updated.',
+              ),
             );
         }
       })
       .catch((e) => {
-        console.log(e);
+        this.logtail.error(
+          'visa requirements data of countries are not updated',
+          {
+            type: 'visaRequirements',
+            message: e,
+          },
+        );
       });
   }
 
   public async getCountries(): Promise<any> {
+    const fixCountryName = (countryName: string): string => {
+      const correctedName = CountryNamesFix.filter((country) =>
+        country.alternatives.includes(countryName),
+      );
+
+      return correctedName.length > 0 ? correctedName[0].standard : countryName;
+    };
+
     const countryNames: string[] = await this.visaCountryModel
       .distinct('name')
       .then((countries) => {
-        return countries.map((country) => this.fixCountryName(country));
+        return countries.map((country) => fixCountryName(country));
       });
 
-    const fixCountryName = (countriesData) => {
+    const fixCountryNames = (countriesData) => {
       return countriesData.data.map((countryData) => {
         return {
           ...countryData,
           name: {
-            common: this.fixCountryName(countryData.name.common),
+            common: fixCountryName(countryData.name.common),
+            official: countryData.name.official,
           },
         };
       });
@@ -200,7 +212,7 @@ export class VisaRequirementsService {
 
     return this.httpService.get(VisaCountriesEnum.REST_COUNTRIES_API_URL).pipe(
       map(async (res) => {
-        const fixedNames = fixCountryName(res);
+        const fixedNames = fixCountryNames(res);
 
         const countriesData = await fixedNames.filter((countryData) => {
           return [countryData.name.common, countryData.name.official].some(
@@ -210,12 +222,22 @@ export class VisaRequirementsService {
           );
         });
 
-        await this.countryModel.insertMany(countriesData, (error, result) => {
-          if (error) {
-            return error;
-          } else {
-            return result;
-          }
+        return await this.connection.db.dropCollection('countries').then(() => {
+          this.countryModel.insertMany(countriesData, (error, result) => {
+            if (error) {
+              return this.logtail.error(
+                'General countries data are not updated',
+                {
+                  type: 'countries',
+                  message: error.message,
+                },
+              );
+            } else {
+              return this.logtail.info(
+                'General countries data has been successfully updated.',
+              );
+            }
+          });
         });
       }),
     );
