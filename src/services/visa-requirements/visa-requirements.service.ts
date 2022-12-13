@@ -1,33 +1,28 @@
 import * as puppeteer from 'puppeteer';
-import { map } from 'rxjs';
 import { Cron } from '@nestjs/schedule';
 import { Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
-import { Country, CountryDocument } from '../schemas/country.schema';
+import { Country, CountryDocument } from '../../schemas/country.schema';
 import {
   VisaCountry,
   VisaCountryDocument,
-} from '../schemas/visa_country.schema';
-import { VisaCountryDto } from '../dto/visa_country.dto';
-import { HttpService } from '@nestjs/axios';
-import { VisaCountriesEnum } from '../enum/visa-countries.enum';
-import { CountryNamesFix } from '../enum/country-names-fix';
-import { Islands } from '../enum/islands-list';
+} from '../../schemas/visa_country.schema';
+import { VisaCountryDto } from '../../dto/visa_country.dto';
+import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
 import { Logtail } from '@logtail/node';
 
 @Injectable()
 export class VisaRequirementsService {
-  private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
-
   constructor(
     @InjectModel(VisaCountry.name)
     private readonly visaCountryModel: Model<VisaCountryDocument>,
     @InjectModel(Country.name)
     private readonly countryModel: Model<CountryDocument>,
     @InjectConnection() private connection: Connection,
-    private readonly httpService: HttpService,
   ) {}
+
+  private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
 
   public async getUrls(): Promise<string[]> {
     const browser = await puppeteer.launch();
@@ -139,12 +134,12 @@ export class VisaRequirementsService {
     });
   }
 
-  // Every year at 03:00 on day-of-month 1 in July and January.
+  // Every year at 03:00 on day-of-month 1 in January, April, July, and October
   @Cron('00 03 1 1,4,7,10 *', {
-    name: 'update_visa_requirements',
+    name: 'update_visa_reqs',
     timeZone: 'Europe/Paris',
   })
-  public async updateCountriesData(): Promise<any> {
+  public async updateVisaReqsData(): Promise<any> {
     return await this.getAllVisaReqs()
       .then((countries) => {
         const isCountriesLengthEqual =
@@ -181,65 +176,5 @@ export class VisaRequirementsService {
           },
         );
       });
-  }
-
-  public async getCountries(): Promise<any> {
-    const fixCountryName = (countryName: string): string => {
-      const correctedName = CountryNamesFix.filter((country) =>
-        country.alternatives.includes(countryName),
-      );
-
-      return correctedName.length > 0 ? correctedName[0].standard : countryName;
-    };
-
-    const countryNames: string[] = await this.visaCountryModel
-      .distinct('name')
-      .then((countries) => {
-        return countries.map((country) => fixCountryName(country));
-      });
-
-    const fixCountryNames = (countriesData) => {
-      return countriesData.data.map((countryData) => {
-        return {
-          ...countryData,
-          name: {
-            common: fixCountryName(countryData.name.common),
-            official: countryData.name.official,
-          },
-        };
-      });
-    };
-
-    return this.httpService.get(VisaCountriesEnum.REST_COUNTRIES_API_URL).pipe(
-      map(async (res) => {
-        const fixedNames = fixCountryNames(res);
-
-        const countriesData = await fixedNames.filter((countryData) => {
-          return [countryData.name.common, countryData.name.official].some(
-            (country) =>
-              countryNames.includes(country) &&
-              !Islands.includes(countryData.name.common),
-          );
-        });
-
-        return await this.connection.db.dropCollection('countries').then(() => {
-          this.countryModel.insertMany(countriesData, (error, result) => {
-            if (error) {
-              return this.logtail.error(
-                'General countries data are not updated',
-                {
-                  type: 'countries',
-                  message: error.message,
-                },
-              );
-            } else {
-              return this.logtail.info(
-                'General countries data has been successfully updated.',
-              );
-            }
-          });
-        });
-      }),
-    );
   }
 }

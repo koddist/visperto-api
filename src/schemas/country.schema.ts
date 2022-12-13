@@ -1,6 +1,6 @@
 import { Prop, raw, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
-import { VisaCountryDocument } from './visa_country.schema';
+// import { VisaCountryDocument } from './visa_country.schema';
 
 export type CountryDocument = Country & Document;
 
@@ -60,6 +60,16 @@ export class Country extends Document {
 
   @Prop([String])
   timezones: string[];
+
+  @Prop(
+    raw({
+      latlng: raw({
+        0: { type: Number },
+        1: { type: Number },
+      }),
+    }),
+  )
+  capitalInfo: Record<string, any>;
 
   @Prop(
     raw({
