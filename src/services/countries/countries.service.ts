@@ -71,8 +71,10 @@ export class CountriesService {
               return this.logtail.error(
                 'General countries data are not updated',
                 {
-                  type: 'countries',
-                  message: error.message,
+                  details: {
+                    type: 'countries',
+                    message: error.message,
+                  },
                 },
               );
             } else {

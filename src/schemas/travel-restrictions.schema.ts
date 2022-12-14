@@ -57,6 +57,12 @@ export class TravelRestrictions extends Document {
         ban: { type: String },
         referenceLink: { type: String },
       }),
+      travelTest: raw({
+        lastUpdate: { type: String },
+        isRequired: { type: String },
+        requirement: { type: String },
+        referenceLink: { type: String },
+      }),
       travelVaccination: raw({
         lastUpdate: { type: String },
         isRequired: { type: String },

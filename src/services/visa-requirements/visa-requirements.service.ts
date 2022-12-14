@@ -171,8 +171,10 @@ export class VisaRequirementsService {
         this.logtail.error(
           'visa requirements data of countries are not updated',
           {
-            type: 'visaRequirements',
-            message: e,
+            details: {
+              type: 'visaRequirements',
+              message: e,
+            },
           },
         );
       });
