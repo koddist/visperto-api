@@ -8,13 +8,21 @@ import { Connection, Model, Promise } from 'mongoose';
 import { Logtail } from '@logtail/node';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
-import { map } from 'rxjs';
+import { catchError, lastValueFrom, map, Observable } from 'rxjs';
 import { Cron } from '@nestjs/schedule';
+import { AmadeusAuthTokenInterface } from '../../interfaces/amadeus-auth-token.interface';
 
 @Injectable()
 export class TravelRestrictionsService {
   private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
-  private readonly token = 'BRixg3GxxCEOLFOrgk6BTAGA5oIr';
+  private readonly amadeus = {
+    baseUrl: 'https://api.amadeus.com',
+    apiKeys: {
+      grant_type: 'client_credentials',
+      client_id: 'X57OUw9bKclPdCh1aUMLX3kFmxzVV7yc',
+      client_secret: 'mcb0PfM6xgCPG8XQ',
+    },
+  };
 
   constructor(
     @InjectConnection() private connection: Connection,
@@ -25,11 +33,39 @@ export class TravelRestrictionsService {
     private readonly countryModel: Model<CountryDocument>,
   ) {}
 
-  @Cron('00 05 10 1,3,5,7,9,11 *', {
+  public getAuthorizationToken(): Observable<AmadeusAuthTokenInterface> {
+    return this.httpService
+      .post(
+        'https://api.amadeus.com/v1/security/oauth2/token',
+        this.amadeus.apiKeys,
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+      )
+      .pipe(
+        map((res) => res.data),
+        catchError((err) => {
+          return this.logtail
+            .error('Amadeus authorization token API call failed', {
+              details: {
+                type: 'travelRestrictions',
+                message: err.response.data,
+              },
+            })
+            .then(() => {
+              throw err.response.data;
+            });
+        }),
+      );
+  }
+
+  @Cron('00 05 1 * *', {
     name: 'update_travel_restrictions',
     timeZone: 'Europe/Paris',
   })
   public async getTravelRestrictions() {
+    const token = await lastValueFrom(this.getAuthorizationToken()).then(
+      (auth) => auth.access_token,
+    );
+
     const countryCodes: string[] = await this.countryModel
       .distinct('cca2')
       .then((codes) => codes);
@@ -44,18 +80,33 @@ export class TravelRestrictionsService {
     const getTravelRestriction = (countryCode: string) => {
       return this.httpService
         .get(
-          `https://test.api.amadeus.com/v2/duty-of-care/diseases/covid19-area-report?countryCode=${countryCode}&language=EN`,
-          { headers: { Authorization: `Bearer ${this.token}` } },
+          `${this.amadeus.baseUrl}/v2/duty-of-care/diseases/covid19-area-report?countryCode=${countryCode}&language=EN`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
         )
         .pipe(
           map((response) => {
-            console.log(response.data.data.area.name);
             return response.data.data;
+          }),
+          catchError((err) => {
+            return this.logtail
+              .error('Travel restrictions API call failed', {
+                details: {
+                  type: 'travelRestrictions',
+                  message: err.response.data.errors,
+                },
+              })
+              .then(() => {
+                throw err.response.data.errors[0].detail;
+              });
           }),
         );
     };
 
-    for (const countryCode of countryCodes.slice(9, 12)) {
+    for (const countryCode of countryCodes) {
       promises.push(
         new Promise((resolve) => {
           getTravelRestriction(countryCode).subscribe((data) => {
@@ -67,7 +118,6 @@ export class TravelRestrictionsService {
     }
 
     return Promise.all(promises).then(() => {
-      console.log(travelRestrictions);
       return this.connection.db
         .dropCollection('travelRestrictions')
         .then(() => {
@@ -78,8 +128,10 @@ export class TravelRestrictionsService {
                 return this.logtail.error(
                   'Travel restrictions data are not updated',
                   {
-                    type: 'travelRestrictions',
-                    message: error.message,
+                    details: {
+                      type: 'travelRestrictions',
+                      message: error.message,
+                    },
                   },
                 );
               } else {
