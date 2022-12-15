@@ -19,8 +19,8 @@ export class TravelRestrictionsService {
     baseUrl: 'https://api.amadeus.com',
     apiKeys: {
       grant_type: 'client_credentials',
-      client_id: 'X57OUw9bKclPdCh1aUMLX3kFmxzVV7yc',
-      client_secret: 'mcb0PfM6xgCPG8XQ',
+      client_id: '76waNlCy0Gal8uwAWie3TOoLBizbaCbY',
+      client_secret: 'S9KgwMdGb2pLwPYe',
     },
   };
 
@@ -36,7 +36,7 @@ export class TravelRestrictionsService {
   public getAuthorizationToken(): Observable<AmadeusAuthTokenInterface> {
     return this.httpService
       .post(
-        'https://api.amadeus.com/v1/security/oauth2/token',
+        `${this.amadeus.baseUrl}/v1/security/oauth2/token`,
         this.amadeus.apiKeys,
         { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
       )
@@ -57,6 +57,7 @@ export class TravelRestrictionsService {
       );
   }
 
+  // At 05:00 on day-of-month 1
   @Cron('00 05 1 * *', {
     name: 'update_travel_restrictions',
     timeZone: 'Europe/Paris',
@@ -66,9 +67,11 @@ export class TravelRestrictionsService {
       (auth) => auth.access_token,
     );
 
+    const noDataInAmadeus = ['XK', 'VA']; // Kosovo, Vatican
+
     const countryCodes: string[] = await this.countryModel
       .distinct('cca2')
-      .then((codes) => codes);
+      .then((codes) => codes.filter((code) => !noDataInAmadeus.includes(code)));
 
     const apiCallInterval = (ms) => {
       return new Promise((resolve) => setTimeout(resolve, ms));
@@ -114,7 +117,7 @@ export class TravelRestrictionsService {
           });
         }),
       );
-      await apiCallInterval(1000);
+      await apiCallInterval(2000);
     }
 
     return Promise.all(promises).then(() => {
