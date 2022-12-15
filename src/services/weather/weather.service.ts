@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { map, Observable } from 'rxjs';
+import { catchError, map, Observable } from 'rxjs';
 import { WeatherInterface } from '../../interfaces/weather.interface';
 
 @Injectable()
@@ -15,6 +15,12 @@ export class WeatherService {
       .get(
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`,
       )
-      .pipe(map((res) => res.data.current_weather));
+      .pipe(
+        map((res) => res.data.current_weather),
+        catchError((e) => {
+          console.log(e);
+          return e;
+        }),
+      );
   }
 }
