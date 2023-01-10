@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CountryNamesFix } from '../../enum/country-names-fix';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
 import { map } from 'rxjs';
@@ -26,7 +26,7 @@ export class CountriesService {
 
   private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
 
-  public async getCountries(): Promise<any> {
+  private async getCountries(): Promise<any> {
     const fixCountryName = (countryName: string): string => {
       const correctedName = CountryNamesFix.filter((country) =>
         country.alternatives.includes(countryName),
@@ -86,5 +86,40 @@ export class CountriesService {
         });
       }),
     );
+  }
+
+  public async getListOfCountries() {
+    return this.countryModel
+      .aggregate([
+        {
+          $lookup:
+            {
+              from: 'visaRequirements',
+              localField: 'name.common',
+              foreignField: 'name',
+              as: 'visaRequirements'
+            }
+        },
+        {
+          $addFields: {
+            visaRequirementsID: { $arrayElemAt: ['$visaRequirements._id', 0] },
+            name: '$name.common'
+          }
+        },
+        {
+          $project: { _id: 1, 'name': 1, visaRequirementsID: 1 }
+        }
+      ])
+      .then((countries) => countries);
+  }
+
+  public async getCountryById(countryId: string) {
+    const country = await this.countryModel.findById(countryId);
+
+    if (!country) {
+      throw new NotFoundException('Country not found');
+    }
+
+    return country;
   }
 }

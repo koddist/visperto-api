@@ -33,7 +33,7 @@ export class TravelRestrictionsService {
     private readonly countryModel: Model<CountryDocument>,
   ) {}
 
-  public getAuthorizationToken(): Observable<AmadeusAuthTokenInterface> {
+  private getAuthorizationToken(): Observable<AmadeusAuthTokenInterface> {
     return this.httpService
       .post(
         `${this.amadeus.baseUrl}/v1/security/oauth2/token`,
@@ -62,7 +62,7 @@ export class TravelRestrictionsService {
     name: 'update_travel_restrictions',
     timeZone: 'Europe/Paris',
   })
-  public async getTravelRestrictions() {
+  private async getTravelRestrictions() {
     const token = await lastValueFrom(this.getAuthorizationToken()).then(
       (auth) => auth.access_token,
     );

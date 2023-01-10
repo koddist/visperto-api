@@ -1,6 +1,6 @@
 import * as puppeteer from 'puppeteer';
 import { Cron } from '@nestjs/schedule';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
 import { Country, CountryDocument } from '../../schemas/country.schema';
@@ -24,7 +24,7 @@ export class VisaRequirementsService {
 
   private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
 
-  public async getUrls(): Promise<string[]> {
+  private async getUrls(): Promise<string[]> {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
@@ -70,7 +70,7 @@ export class VisaRequirementsService {
       .visa.includes(visaStatus);
   }
 
-  public async getVisaReqByUrl(url: string) {
+  private async getVisaReqByUrl(url: string) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
@@ -116,7 +116,7 @@ export class VisaRequirementsService {
       });
   }
 
-  public async getAllVisaReqs() {
+  private async getAllVisaReqs() {
     const urls = await this.getUrls();
     const countries: VisaCountryDto[] = [];
 
@@ -139,7 +139,7 @@ export class VisaRequirementsService {
     name: 'update_visa_reqs',
     timeZone: 'Europe/Paris',
   })
-  public async updateVisaReqsData(): Promise<any> {
+  private async updateVisaReqsData(): Promise<any> {
     return await this.getAllVisaReqs()
       .then((countries) => {
         const isCountriesLengthEqual =
@@ -178,5 +178,20 @@ export class VisaRequirementsService {
           },
         );
       });
+  }
+
+  public async getVisaReqByCountry(passportCountryName: string, travelCountryID: string) {
+    const visaCountry: VisaCountryDto = await this.visaCountryModel.findById(travelCountryID);
+
+    if (!visaCountry) {
+      throw new NotFoundException('Visa country not found');
+    }
+
+    const visaReq = visaCountry.visaRequirements.find((visaReq) => visaReq.country === passportCountryName);
+    if (!visaReq) {
+      throw new NotFoundException('Visa requirement not found');
+    }
+
+    return visaReq;
   }
 }

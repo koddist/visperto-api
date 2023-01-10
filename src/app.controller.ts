@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { VisaRequirementsService } from './services/visa-requirements/visa-requirements.service';
 import { CountriesService } from './services/countries/countries.service';
 import { WeatherService } from './services/weather/weather.service';
@@ -13,9 +13,9 @@ export class AppController {
     private readonly travelRestrictionsService: TravelRestrictionsService,
   ) {}
 
-  @Get()
-  getCountries() {
-    return this.countriesService.getCountries();
+  @Get('countries')
+  getListOfCountries() {
+    return this.countriesService.getListOfCountries();
   }
 
   @Get('weather?')
@@ -23,8 +23,19 @@ export class AppController {
     return this.weatherService.getWeather(lat, long);
   }
 
-  @Get('travel-restrictions')
-  getTravelRestrictions() {
-    return this.travelRestrictionsService.getTravelRestrictions();
+  @Get('visa_req?')
+  getVisaReq(
+    @Query('passport') passportCountryName: string,
+    @Query('country') travelCountryID: string,
+  ) {
+    return this.visaRequirementsService.getVisaReqByCountry(
+      passportCountryName,
+      travelCountryID,
+    );
+  }
+
+  @Get('country/:id')
+  getCountryById(@Param('id') id: string) {
+    return this.countriesService.getCountryById(id);
   }
 }
