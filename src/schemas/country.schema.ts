@@ -1,6 +1,5 @@
 import { Prop, raw, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
-// import { VisaCountryDocument } from './visa_country.schema';
 
 export type CountryDocument = Country & Document;
 
@@ -13,9 +12,6 @@ export class Country extends Document {
     }),
   )
   name: Record<string, any>;
-
-  // @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'VisaCountryDocument' })
-  // visaRequirements: VisaCountryDocument;
 
   @Prop([String])
   tld: string[];

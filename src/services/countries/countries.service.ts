@@ -101,13 +101,23 @@ export class CountriesService {
             }
         },
         {
+          $lookup:
+            {
+              from: 'travelRestrictions',
+              localField: 'cca2',
+              foreignField: 'area.code',
+              as: 'travelRestrictions'
+            }
+        },
+        {
           $addFields: {
-            visaRequirementsID: { $arrayElemAt: ['$visaRequirements._id', 0] },
+            visaRequirementsId: { $arrayElemAt: ['$visaRequirements._id', 0] },
+            travelRestrictionsId: { $arrayElemAt: ['$travelRestrictions._id', 0] },
             name: '$name.common'
           }
         },
         {
-          $project: { _id: 1, 'name': 1, visaRequirementsID: 1 }
+          $project: { _id: 1, 'name': 1, visaRequirementsId: 1, travelRestrictionsId: 1 }
         }
       ])
       .then((countries) => countries);
