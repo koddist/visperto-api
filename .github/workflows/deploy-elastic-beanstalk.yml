@@ -25,7 +25,7 @@ jobs:
         run: npm run build
 
       - name: Create zip archive
-        run: zip -r dist.zip dist/
+        run: zip -j dist.zip dist/*
 
       - name: Deploy
         uses: einaregilsson/beanstalk-deploy@v21
@@ -36,4 +36,4 @@ jobs:
           environment_name: 'dinav-env'
           region: 'us-east-1'
           version_label: '1'
-          deployment_package: '/dist/dist.zip'
+          deployment_package: 'dist.zip'
