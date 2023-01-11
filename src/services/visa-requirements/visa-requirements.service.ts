@@ -180,8 +180,8 @@ export class VisaRequirementsService {
       });
   }
 
-  public async getVisaReqByCountry(passportCountryName: string, travelCountryID: string) {
-    const visaCountry: VisaCountryDto = await this.visaCountryModel.findById(travelCountryID);
+  public async getVisaReqByCountry(passportCountryName: string, travelCountryId: string) {
+    const visaCountry: VisaCountryDto = await this.visaCountryModel.findById(travelCountryId);
 
     if (!visaCountry) {
       throw new NotFoundException('Visa country not found');

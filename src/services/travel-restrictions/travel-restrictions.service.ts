@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import {
   TravelRestrictions,
@@ -146,5 +146,15 @@ export class TravelRestrictionsService {
           );
         });
     });
+  }
+
+  public async getTravelRestrictionById(countryId: string) {
+    const travelRestriction = await this.travelRestrictionsModel.findById(countryId);
+
+    if (!travelRestriction) {
+      throw new NotFoundException('Travel restriction not found');
+    }
+
+    return travelRestriction;
   }
 }

@@ -15,6 +15,7 @@ import {
   TravelRestrictions,
   TravelRestrictionsSchema,
 } from './schemas/travel-restrictions.schema';
+import { ExchangeRateService } from './services/exchange-rate/exchange-rate.service';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import {
     WeatherService,
     CountriesService,
     TravelRestrictionsService,
+    ExchangeRateService,
   ],
 })
 export class AppModule {}
