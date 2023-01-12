@@ -35,5 +35,5 @@ jobs:
           application_name: 'dinav'
           environment_name: 'Dinav-env'
           region: 'eu-central-1'
-          version_label: '1'
+          version_label: '1a'
           deployment_package: 'dist.zip'
