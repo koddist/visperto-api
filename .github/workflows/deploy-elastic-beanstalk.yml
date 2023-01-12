@@ -35,5 +35,5 @@ jobs:
           application_name: 'dinav'
           environment_name: 'Dinav-env'
           region: 'eu-central-1'
-          version_label: '1c'
+          version_label: ${{ env.GITHUB_SHA }}-v{{ env.GITHUB_RUN_NUMBER }}
           deployment_package: 'deploy.zip'
