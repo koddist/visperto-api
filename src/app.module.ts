@@ -20,7 +20,7 @@ import { ExchangeRateService } from './services/exchange-rate/exchange-rate.serv
 @Module({
   imports: [
     MongooseModule.forRoot(
-      `mongodb://${process.env.MONGODB_USER}:${process.env.MONGODB_PASSWORD}@hafenhost.com:27017`,
+      `mongodb+srv://${process.env.MONGODB_CLOUD_USER}:${process.env.MONGODB_CLOUD_PASSWORD}@private.sbcgrty.mongodb.net/?retryWrites=true&w=majoritynot`,
       { dbName: process.env.MONGODB_DB } as MongooseModuleOptions,
     ),
     MongooseModule.forFeature([
