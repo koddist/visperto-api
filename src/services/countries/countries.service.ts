@@ -3,7 +3,6 @@ import { CountryNamesFix } from '../../enum/country-names-fix';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
 import { map } from 'rxjs';
 import { Islands } from '../../enum/islands-list';
-import { Logtail } from '@logtail/node';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import {
   VisaCountry,
@@ -12,6 +11,8 @@ import {
 import { Connection, Model } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
+import { LogtailService } from '../logtail/logtail.service';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class CountriesService {
@@ -22,10 +23,13 @@ export class CountriesService {
     private readonly countryModel: Model<CountryDocument>,
     @InjectConnection() private connection: Connection,
     private readonly httpService: HttpService,
+    private readonly logtailService: LogtailService,
   ) {}
 
-  private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
-
+  @Cron('00 03 2 * *', {
+    name: 'update_countries',
+    timeZone: 'Europe/Paris',
+  })
   private async getCountries(): Promise<any> {
     const fixCountryName = (countryName: string): string => {
       const correctedName = CountryNamesFix.filter((country) =>
@@ -68,17 +72,13 @@ export class CountriesService {
         return await this.connection.db.dropCollection('countries').then(() => {
           this.countryModel.insertMany(countriesData, (error) => {
             if (error) {
-              return this.logtail.error(
+              return this.logtailService.logError(
                 'General countries data are not updated',
-                {
-                  details: {
-                    type: 'countries',
-                    message: error.message,
-                  },
-                },
+                'countries',
+                error.message,
               );
             } else {
-              return this.logtail.info(
+              return this.logtailService.logInfo(
                 'General countries data has been successfully updated.',
               );
             }
@@ -92,33 +92,38 @@ export class CountriesService {
     return this.countryModel
       .aggregate([
         {
-          $lookup:
-            {
-              from: 'visaRequirements',
-              localField: 'name.common',
-              foreignField: 'name',
-              as: 'visaRequirements'
-            }
+          $lookup: {
+            from: 'visaRequirements',
+            localField: 'name.common',
+            foreignField: 'name',
+            as: 'visaRequirements',
+          },
         },
         {
-          $lookup:
-            {
-              from: 'travelRestrictions',
-              localField: 'cca2',
-              foreignField: 'area.code',
-              as: 'travelRestrictions'
-            }
+          $lookup: {
+            from: 'travelRestrictions',
+            localField: 'cca2',
+            foreignField: 'area.code',
+            as: 'travelRestrictions',
+          },
         },
         {
           $addFields: {
             visaRequirementsId: { $arrayElemAt: ['$visaRequirements._id', 0] },
-            travelRestrictionsId: { $arrayElemAt: ['$travelRestrictions._id', 0] },
-            name: '$name.common'
-          }
+            travelRestrictionsId: {
+              $arrayElemAt: ['$travelRestrictions._id', 0],
+            },
+            name: '$name.common',
+          },
         },
         {
-          $project: { _id: 1, 'name': 1, visaRequirementsId: 1, travelRestrictionsId: 1 }
-        }
+          $project: {
+            _id: 1,
+            name: 1,
+            visaRequirementsId: 1,
+            travelRestrictionsId: 1,
+          },
+        },
       ])
       .then((countries) => countries);
   }
