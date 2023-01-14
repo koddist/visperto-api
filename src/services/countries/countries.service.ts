@@ -11,7 +11,7 @@ import {
 import { Connection, Model } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
-import { LogtailService } from "../logtail/logtail.service";
+import { LogtailService } from '../logtail/logtail.service';
 import { Cron } from '@nestjs/schedule';
 
 @Injectable()
@@ -72,9 +72,15 @@ export class CountriesService {
         return await this.connection.db.dropCollection('countries').then(() => {
           this.countryModel.insertMany(countriesData, (error) => {
             if (error) {
-              return this.logtailService.logError('General countries data are not updated', 'countries', error.message);
+              return this.logtailService.logError(
+                'General countries data are not updated',
+                'countries',
+                error.message,
+              );
             } else {
-              return this.logtailService.logInfo('General countries data has been successfully updated.');
+              return this.logtailService.logInfo(
+                'General countries data has been successfully updated.',
+              );
             }
           });
         });
@@ -86,33 +92,38 @@ export class CountriesService {
     return this.countryModel
       .aggregate([
         {
-          $lookup:
-            {
-              from: 'visaRequirements',
-              localField: 'name.common',
-              foreignField: 'name',
-              as: 'visaRequirements'
-            }
+          $lookup: {
+            from: 'visaRequirements',
+            localField: 'name.common',
+            foreignField: 'name',
+            as: 'visaRequirements',
+          },
         },
         {
-          $lookup:
-            {
-              from: 'travelRestrictions',
-              localField: 'cca2',
-              foreignField: 'area.code',
-              as: 'travelRestrictions'
-            }
+          $lookup: {
+            from: 'travelRestrictions',
+            localField: 'cca2',
+            foreignField: 'area.code',
+            as: 'travelRestrictions',
+          },
         },
         {
           $addFields: {
             visaRequirementsId: { $arrayElemAt: ['$visaRequirements._id', 0] },
-            travelRestrictionsId: { $arrayElemAt: ['$travelRestrictions._id', 0] },
-            name: '$name.common'
-          }
+            travelRestrictionsId: {
+              $arrayElemAt: ['$travelRestrictions._id', 0],
+            },
+            name: '$name.common',
+          },
         },
         {
-          $project: { _id: 1, 'name': 1, visaRequirementsId: 1, travelRestrictionsId: 1 }
-        }
+          $project: {
+            _id: 1,
+            name: 1,
+            visaRequirementsId: 1,
+            travelRestrictionsId: 1,
+          },
+        },
       ])
       .then((countries) => countries);
   }

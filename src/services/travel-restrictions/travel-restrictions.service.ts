@@ -10,7 +10,7 @@ import { Country, CountryDocument } from '../../schemas/country.schema';
 import { catchError, lastValueFrom, map, Observable } from 'rxjs';
 import { Cron } from '@nestjs/schedule';
 import { AmadeusAuthTokenInterface } from '../../interfaces/amadeus-auth-token.interface';
-import { LogtailService } from "../logtail/logtail.service";
+import { LogtailService } from '../logtail/logtail.service';
 
 @Injectable()
 export class TravelRestrictionsService {
@@ -43,10 +43,15 @@ export class TravelRestrictionsService {
       .pipe(
         map((res) => res.data),
         catchError((err) => {
-          return this.logtailService.logError('Amadeus authorization token API call failed', 'travelRestrictions', err.response.data)
+          return this.logtailService
+            .logError(
+              'Amadeus authorization token API call failed',
+              'travelRestrictions',
+              err.response.data,
+            )
             .then(() => {
               throw err.response.data;
-           });
+            });
         }),
       );
   }
@@ -89,7 +94,12 @@ export class TravelRestrictionsService {
             return response.data.data;
           }),
           catchError((err) => {
-            return this.logtailService.logError('Travel restrictions API call failed', 'travelRestrictions', err.response.data.errors)
+            return this.logtailService
+              .logError(
+                'Travel restrictions API call failed',
+                'travelRestrictions',
+                err.response.data.errors,
+              )
               .then(() => {
                 throw err.response.data.errors[0].detail;
               });
@@ -116,9 +126,15 @@ export class TravelRestrictionsService {
             travelRestrictions,
             (error) => {
               if (error) {
-                return this.logtailService.logError('Travel restrictions data are not updated', 'travelRestrictions', error.message);
+                return this.logtailService.logError(
+                  'Travel restrictions data are not updated',
+                  'travelRestrictions',
+                  error.message,
+                );
               } else {
-                return this.logtailService.logInfo('Travel restrictions data has been successfully updated.');
+                return this.logtailService.logInfo(
+                  'Travel restrictions data has been successfully updated.',
+                );
               }
             },
           );
@@ -127,7 +143,9 @@ export class TravelRestrictionsService {
   }
 
   public async getTravelRestrictionById(countryId: string) {
-    const travelRestriction = await this.travelRestrictionsModel.findById(countryId);
+    const travelRestriction = await this.travelRestrictionsModel.findById(
+      countryId,
+    );
 
     if (!travelRestriction) {
       throw new NotFoundException('Travel restriction not found');

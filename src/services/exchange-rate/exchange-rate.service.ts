@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { catchError, map, Observable } from 'rxjs';
+import { catchError, map } from 'rxjs';
 
 @Injectable()
 export class ExchangeRateService {
