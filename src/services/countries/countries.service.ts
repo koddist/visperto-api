@@ -26,7 +26,7 @@ export class CountriesService {
     private readonly logtailService: LogtailService,
   ) {}
 
-  @Cron('00 03 1 * *', {
+  @Cron('00 03 2 * *', {
     name: 'update_countries',
     timeZone: 'Europe/Paris',
   })
