@@ -52,7 +52,7 @@ export class TravelRestrictionsService {
   }
 
   // At 05:00 on day-of-month 1
-  @Cron('00 05 1 * *', {
+  @Cron('00 03 3 * *', {
     name: 'update_travel_restrictions',
     timeZone: 'Europe/Paris',
   })
