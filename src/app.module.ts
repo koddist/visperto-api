@@ -16,12 +16,17 @@ import {
   TravelRestrictionsSchema,
 } from './schemas/travel-restrictions.schema';
 import { ExchangeRateService } from './services/exchange-rate/exchange-rate.service';
+import { LogtailService } from './services/logtail/logtail.service';
 
 @Module({
   imports: [
     MongooseModule.forRoot(
-      `mongodb+srv://${process.env.MONGODB_CLOUD_USER}:${process.env.MONGODB_CLOUD_PASSWORD}@private.sbcgrty.mongodb.net/?retryWrites=true&w=majoritynot`,
-      { dbName: process.env.MONGODB_DB } as MongooseModuleOptions,
+      `mongodb+srv://${process.env.MONGODB_CLOUD_USER}:${process.env.MONGODB_CLOUD_PASSWORD}@private.sbcgrty.mongodb.net/?retryWrites=true&w=majority`,
+      {
+        dbName: process.env.MONGODB_DB,
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      } as MongooseModuleOptions,
     ),
     MongooseModule.forFeature([
       { name: VisaCountry.name, schema: VisaCountrySchema },
@@ -41,6 +46,7 @@ import { ExchangeRateService } from './services/exchange-rate/exchange-rate.serv
     CountriesService,
     TravelRestrictionsService,
     ExchangeRateService,
+    LogtailService,
   ],
 })
 export class AppModule {}

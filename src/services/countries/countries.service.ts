@@ -3,7 +3,6 @@ import { CountryNamesFix } from '../../enum/country-names-fix';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
 import { map } from 'rxjs';
 import { Islands } from '../../enum/islands-list';
-import { Logtail } from '@logtail/node';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import {
   VisaCountry,
@@ -12,6 +11,8 @@ import {
 import { Connection, Model } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
+import { LogtailService } from "../logtail/logtail.service";
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class CountriesService {
@@ -22,10 +23,13 @@ export class CountriesService {
     private readonly countryModel: Model<CountryDocument>,
     @InjectConnection() private connection: Connection,
     private readonly httpService: HttpService,
+    private readonly logtailService: LogtailService,
   ) {}
 
-  private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
-
+  @Cron('00 03 1 * *', {
+    name: 'update_countries',
+    timeZone: 'Europe/Paris',
+  })
   private async getCountries(): Promise<any> {
     const fixCountryName = (countryName: string): string => {
       const correctedName = CountryNamesFix.filter((country) =>
@@ -68,19 +72,9 @@ export class CountriesService {
         return await this.connection.db.dropCollection('countries').then(() => {
           this.countryModel.insertMany(countriesData, (error) => {
             if (error) {
-              return this.logtail.error(
-                'General countries data are not updated',
-                {
-                  details: {
-                    type: 'countries',
-                    message: error.message,
-                  },
-                },
-              );
+              return this.logtailService.logError('General countries data are not updated', 'countries', error.message);
             } else {
-              return this.logtail.info(
-                'General countries data has been successfully updated.',
-              );
+              return this.logtailService.logInfo('General countries data has been successfully updated.');
             }
           });
         });

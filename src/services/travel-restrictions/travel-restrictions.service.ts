@@ -5,16 +5,15 @@ import {
   TravelRestrictionsDocument,
 } from '../../schemas/travel-restrictions.schema';
 import { Connection, Model, Promise } from 'mongoose';
-import { Logtail } from '@logtail/node';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
 import { catchError, lastValueFrom, map, Observable } from 'rxjs';
 import { Cron } from '@nestjs/schedule';
 import { AmadeusAuthTokenInterface } from '../../interfaces/amadeus-auth-token.interface';
+import { LogtailService } from "../logtail/logtail.service";
 
 @Injectable()
 export class TravelRestrictionsService {
-  private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
   private readonly amadeus = {
     baseUrl: 'https://api.amadeus.com',
     apiKeys: {
@@ -31,6 +30,7 @@ export class TravelRestrictionsService {
     private readonly travelRestrictionsModel: Model<TravelRestrictionsDocument>,
     @InjectModel(Country.name)
     private readonly countryModel: Model<CountryDocument>,
+    private readonly logtailService: LogtailService
   ) {}
 
   private getAuthorizationToken(): Observable<AmadeusAuthTokenInterface> {
@@ -43,16 +43,10 @@ export class TravelRestrictionsService {
       .pipe(
         map((res) => res.data),
         catchError((err) => {
-          return this.logtail
-            .error('Amadeus authorization token API call failed', {
-              details: {
-                type: 'travelRestrictions',
-                message: err.response.data,
-              },
-            })
+          return this.logtailService.logError('Amadeus authorization token API call failed', 'travelRestrictions', err.response.data)
             .then(() => {
               throw err.response.data;
-            });
+           });
         }),
       );
   }
@@ -95,13 +89,7 @@ export class TravelRestrictionsService {
             return response.data.data;
           }),
           catchError((err) => {
-            return this.logtail
-              .error('Travel restrictions API call failed', {
-                details: {
-                  type: 'travelRestrictions',
-                  message: err.response.data.errors,
-                },
-              })
+            return this.logtailService.logError('Travel restrictions API call failed', 'travelRestrictions', err.response.data.errors)
               .then(() => {
                 throw err.response.data.errors[0].detail;
               });
@@ -128,19 +116,9 @@ export class TravelRestrictionsService {
             travelRestrictions,
             (error) => {
               if (error) {
-                return this.logtail.error(
-                  'Travel restrictions data are not updated',
-                  {
-                    details: {
-                      type: 'travelRestrictions',
-                      message: error.message,
-                    },
-                  },
-                );
+                return this.logtailService.logError('Travel restrictions data are not updated', 'travelRestrictions', error.message);
               } else {
-                return this.logtail.info(
-                  'Travel restrictions data has been successfully updated.',
-                );
+                return this.logtailService.logInfo('Travel restrictions data has been successfully updated.');
               }
             },
           );

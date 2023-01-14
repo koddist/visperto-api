@@ -10,7 +10,7 @@ import {
 } from '../../schemas/visa_country.schema';
 import { VisaCountryDto } from '../../dto/visa_country.dto';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
-import { Logtail } from '@logtail/node';
+import { LogtailService } from '../logtail/logtail.service';
 
 @Injectable()
 export class VisaRequirementsService {
@@ -20,9 +20,8 @@ export class VisaRequirementsService {
     @InjectModel(Country.name)
     private readonly countryModel: Model<CountryDocument>,
     @InjectConnection() private connection: Connection,
+    private readonly logtailService: LogtailService,
   ) {}
-
-  private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
 
   private async getUrls(): Promise<string[]> {
     const browser = await puppeteer.launch();
@@ -30,7 +29,7 @@ export class VisaRequirementsService {
 
     await page.goto('https://www.passportindex.org', {
       waitUntil: 'networkidle2',
-    });
+    }).catch((e) => this.logtailService.logError('getting urls from passports list is failed', 'visaRequirements', e));
 
     return await page
       .evaluate(() => {
@@ -74,7 +73,9 @@ export class VisaRequirementsService {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.goto(url, { waitUntil: 'networkidle2' })
+      .catch((e) => this.logtailService
+        .logError(`getting visa requirements from ${url} is failed`, 'visaRequirements', e));
 
     return await page
       .evaluate(() => {
@@ -159,25 +160,10 @@ export class VisaRequirementsService {
                 const countryData = new this.visaCountryModel(country);
                 return await countryData.save();
               });
-            })
-            .then(() =>
-              this.logtail.info(
-                'Countries visa requirements data has been successfully updated.',
-              ),
-            );
+            }).then(() => this.logtailService.logInfo('Countries visa requirements data has been successfully updated.'));
         }
       })
-      .catch((e) => {
-        this.logtail.error(
-          'visa requirements data of countries are not updated',
-          {
-            details: {
-              type: 'visaRequirements',
-              message: e,
-            },
-          },
-        );
-      });
+      .catch((e) => this.logtailService.logError('visa requirements data of countries are not updated', 'visaRequirements', e));
   }
 
   public async getVisaReqByCountry(passportCountryName: string, travelCountryId: string) {
