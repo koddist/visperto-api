@@ -18,8 +18,8 @@ export class TravelRestrictionsService {
     baseUrl: 'https://api.amadeus.com',
     apiKeys: {
       grant_type: 'client_credentials',
-      client_id: '76waNlCy0Gal8uwAWie3TOoLBizbaCbY',
-      client_secret: 'S9KgwMdGb2pLwPYe',
+      client_id: process.env.AMADEUS_CLIENT_ID,
+      client_secret: process.env.AMADEUS_CLIENT_SECRET,
     },
   };
 
@@ -30,7 +30,7 @@ export class TravelRestrictionsService {
     private readonly travelRestrictionsModel: Model<TravelRestrictionsDocument>,
     @InjectModel(Country.name)
     private readonly countryModel: Model<CountryDocument>,
-    private readonly logtailService: LogtailService
+    private readonly logtailService: LogtailService,
   ) {}
 
   private getAuthorizationToken(): Observable<AmadeusAuthTokenInterface> {
