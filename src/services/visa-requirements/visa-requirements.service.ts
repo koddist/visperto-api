@@ -27,9 +27,17 @@ export class VisaRequirementsService {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    await page.goto('https://www.passportindex.org', {
-      waitUntil: 'networkidle2',
-    }).catch((e) => this.logtailService.logError('getting urls from passports list is failed', 'visaRequirements', e));
+    await page
+      .goto('https://www.passportindex.org', {
+        waitUntil: 'networkidle2',
+      })
+      .catch((e) =>
+        this.logtailService.logError(
+          'getting urls from passports list is failed',
+          'visaRequirements',
+          e,
+        ),
+      );
 
     return await page
       .evaluate(() => {
@@ -73,9 +81,15 @@ export class VisaRequirementsService {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    await page.goto(url, { waitUntil: 'networkidle2' })
-      .catch((e) => this.logtailService
-        .logError(`getting visa requirements from ${url} is failed`, 'visaRequirements', e));
+    await page
+      .goto(url, { waitUntil: 'networkidle2' })
+      .catch((e) =>
+        this.logtailService.logError(
+          `getting visa requirements from ${url} is failed`,
+          'visaRequirements',
+          e,
+        ),
+      );
 
     return await page
       .evaluate(() => {
@@ -160,20 +174,38 @@ export class VisaRequirementsService {
                 const countryData = new this.visaCountryModel(country);
                 return await countryData.save();
               });
-            }).then(() => this.logtailService.logInfo('Countries visa requirements data has been successfully updated.'));
+            })
+            .then(() =>
+              this.logtailService.logInfo(
+                'Countries visa requirements data has been successfully updated.',
+              ),
+            );
         }
       })
-      .catch((e) => this.logtailService.logError('visa requirements data of countries are not updated', 'visaRequirements', e));
+      .catch((e) =>
+        this.logtailService.logError(
+          'visa requirements data of countries are not updated',
+          'visaRequirements',
+          e,
+        ),
+      );
   }
 
-  public async getVisaReqByCountry(passportCountryName: string, travelCountryId: string) {
-    const visaCountry: VisaCountryDto = await this.visaCountryModel.findById(travelCountryId);
+  public async getVisaReqByCountry(
+    passportCountryName: string,
+    travelCountryId: string,
+  ) {
+    const visaCountry: VisaCountryDto = await this.visaCountryModel.findById(
+      travelCountryId,
+    );
 
     if (!visaCountry) {
       throw new NotFoundException('Visa country not found');
     }
 
-    const visaReq = visaCountry.visaRequirements.find((visaReq) => visaReq.country === passportCountryName);
+    const visaReq = visaCountry.visaRequirements.find(
+      (visaReq) => visaReq.country === passportCountryName,
+    );
     if (!visaReq) {
       throw new NotFoundException('Visa requirement not found');
     }
