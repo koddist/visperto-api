@@ -33,5 +33,4 @@ jobs:
 
     - name: Deploy to App Engine
       run: |
-        ls ${{ github.workspace }}
-        gcloud app deploy
+        gcloud app deploy --project=${{ secrets.GOOGLE_CLOUD_PROJECT }}
