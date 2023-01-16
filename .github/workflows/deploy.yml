@@ -1,0 +1,36 @@
+name: Deploy to App Engine
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Authenticate with Google Cloud
+      run: |
+        echo ${{ secrets.GCLOUD_SERVICE_KEY }} | base64 --decode > ${HOME}/gcloud-service-key.json
+        gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
+        gcloud config set project ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+
+    - name: Set environment variables
+      run: |
+        echo "MONGODB_USER=${{ secrets.MONGODB_USER }}" >> $GITHUB_ENV
+        echo "MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}" >> $GITHUB_ENV
+        echo "MONGODB_DB=${{ secrets.MONGODB_DB }}" >> $GITHUB_ENV
+        echo "LOGTAIL_TOKEN=${{ secrets.LOGTAIL_TOKEN }}" >> $GITHUB_ENV
+        echo "MONGODB_CLOUD_USER=${{ secrets.MONGODB_CLOUD_USER }}" >> $GITHUB_ENV
+        echo "MONGODB_CLOUD_PASSWORD=${{ secrets.MONGODB_CLOUD_PASSWORD }}" >> $GITHUB_ENV
+        echo "AMADEUS_CLIENT_ID=${{ secrets.AMADEUS_CLIENT_ID }}" >> $GITHUB_ENV
+        echo "AMADEUS_CLIENT_SECRET=${{ secrets.AMADEUS_CLIENT_SECRET }}" >> $GITHUB_ENV
+
+
+    - name: Deploy to App Engine
+      run: |
+        gcloud app deploy --project ${GOOGLE_CLOUD_PROJECT}
