@@ -5,7 +5,7 @@ import { Logtail } from '@logtail/node';
 export class LogtailService {
   private readonly logtail = new Logtail(process.env.LOGTAIL_TOKEN);
 
-  public logError(message: string, context: string, error: string) {
+  public logError(message: string, context: string, error: string): any {
     return this.logtail.error(message, {
       details: {
         type: context,
@@ -14,7 +14,7 @@ export class LogtailService {
     });
   }
 
-  public logInfo(message: string) {
+  public logInfo(message: string): any {
     return this.logtail.info(message);
   }
 }
