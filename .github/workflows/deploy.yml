@@ -37,7 +37,5 @@ jobs:
       run: npm run build
 
     - name: Deploy to App Engine
-      uses: 'google-github-actions/deploy-appengine@v1'
-
-    - name: 'Get URL'
-      run: 'curl "${{ steps.deploy.outputs.url }}"'
+      run: |
+        gcloud app deploy --project=${{ secrets.GOOGLE_CLOUD_PROJECT }}
