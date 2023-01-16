@@ -30,7 +30,5 @@ jobs:
         echo "AMADEUS_CLIENT_ID=${{ secrets.AMADEUS_CLIENT_ID }}" >> $GITHUB_ENV
         echo "AMADEUS_CLIENT_SECRET=${{ secrets.AMADEUS_CLIENT_SECRET }}" >> $GITHUB_ENV
 
-
     - name: Deploy to App Engine
-      run: |
-        gcloud app deploy --project=${{ secrets.GOOGLE_CLOUD_PROJECT }}
+      uses: 'google-github-actions/deploy-appengine@v1'
