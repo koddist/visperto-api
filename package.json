@@ -1,16 +1,20 @@
 {
   "name": "api-dinav",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "version": "1.0",
+  "description": "Web app for checking international travel information including visa requirements, travel restrictions, exchange rates, and weather forecasts for every country.",
+  "author": "Ayaz Guliyev",
   "private": true,
   "license": "UNLICENSED",
+  "engines": {
+    "node": "^16.0.0"
+  },
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
+    "start:dev:env": "cross-env $(cat .env | xargs) npm run start:dev",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
