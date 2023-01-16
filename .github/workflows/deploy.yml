@@ -10,8 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+    - uses: 73h/gae-app-yaml-replace-env-variables@v0.1
+      env:
+        MONGODB_USER: ${{ secrets.MONGODB_USER }}
+        MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+        MONGODB_DB: ${{ secrets.MONGODB_DB }}
+        LOGTAIL_TOKEN: ${{ secrets.LOGTAIL_TOKEN }}
+        MONGODB_CLOUD_USER: ${{ secrets.MONGODB_CLOUD_USER }}
+        MONGODB_CLOUD_PASSWORD: ${{ secrets.MONGODB_CLOUD_PASSWORD }}
+        AMADEUS_CLIENT_ID: ${{ secrets.AMADEUS_CLIENT_ID }}
+        AMADEUS_CLIENT_SECRET: ${{ secrets.AMADEUS_CLIENT_SECRET }}
+      with:
+        app_yaml_path: "app.yaml"
 
     - name: Authenticate with Google Cloud
       run: |
