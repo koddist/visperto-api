@@ -1,7 +1,6 @@
 runtime: nodejs16
 
 env_variables:
-  APP_ENV: production
   MONGODB_USER: $MONGODB_USER
   MONGODB_PASSWORD: $MONGODB_PASSWORD
   MONGODB_DB: $MONGODB_DB
