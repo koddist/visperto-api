@@ -1,5 +1,10 @@
 runtime: nodejs16
 
+handlers:
+- url: /.*
+  script: auto
+  secure: always
+
 env_variables:
   MONGODB_USER: $MONGODB_USER
   MONGODB_PASSWORD: $MONGODB_PASSWORD
