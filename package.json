@@ -13,6 +13,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node dist/main",
+    "start:env": "cross-env $(cat .env | xargs) node dist/main",
     "start:dev": "nest start --watch",
     "start:dev:env": "cross-env $(cat .env | xargs) npm run start:dev",
     "start:debug": "nest start --debug --watch",
