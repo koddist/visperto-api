@@ -10,8 +10,11 @@ export class ExchangeRateService {
     baseCurrency: string,
     quoteCurrency: string,
   ): Observable<any> {
+    const headers = { 'Accept-Encoding': 'gzip,deflate,compress' };
     return this.httpService
-      .get(`https://api.exchangerate.host/latest?base=${baseCurrency}`)
+      .get(`https://api.exchangerate.host/latest?base=${baseCurrency}`, {
+        headers,
+      })
       .pipe(
         map((res) => {
           if (res.data && res.data.rates) {
