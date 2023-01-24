@@ -15,6 +15,11 @@ export class AppController {
     private readonly exchangeRateService: ExchangeRateService,
   ) {}
 
+  @Get('')
+  welcome() {
+    return { message: 'Hi 👋🏻' };
+  }
+
   @Get('countries')
   getListOfCountries() {
     return this.countriesService.getListOfCountries();
