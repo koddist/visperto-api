@@ -13,6 +13,7 @@ import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
 import { LogtailService } from '../logtail/logtail.service';
 import { Cron } from '@nestjs/schedule';
+import { CountryListItemInterface } from "../../interfaces/country-list-item.interface";
 
 @Injectable()
 export class CountriesService {
@@ -88,7 +89,11 @@ export class CountriesService {
     );
   }
 
-  public async getListOfCountries() {
+  public async getListOfCountriesWithDetails(): Promise<Country[]> {
+    return this.countryModel.find().exec();
+  }
+
+  public async getListOfCountries(): Promise<CountryListItemInterface[]> {
     return this.countryModel
       .aggregate([
         {
@@ -124,11 +129,10 @@ export class CountriesService {
             travelRestrictionsId: 1,
           },
         },
-      ])
-      .then((countries) => countries);
+      ]).then((countries: CountryListItemInterface[]) => countries);
   }
 
-  public async getCountryById(countryId: string) {
+  public async getCountryById(countryId: string): Promise<Country> {
     const country = await this.countryModel.findById(countryId);
 
     if (!country) {
