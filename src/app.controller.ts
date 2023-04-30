@@ -4,6 +4,8 @@ import { CountriesService } from './services/countries/countries.service';
 import { WeatherService } from './services/weather/weather.service';
 import { TravelRestrictionsService } from './services/travel-restrictions/travel-restrictions.service';
 import { ExchangeRateService } from './services/exchange-rate/exchange-rate.service';
+import { Country } from './schemas/country.schema';
+import { CountryListItemInterface } from './interfaces/country-list-item.interface';
 
 @Controller()
 export class AppController {
@@ -21,12 +23,17 @@ export class AppController {
   }
 
   @Get('countries')
-  getListOfCountries() {
+  getListOfCountries(): Promise<CountryListItemInterface[]> {
     return this.countriesService.getListOfCountries();
   }
 
+  @Get('countries_with_details')
+  getListOfCountriesWithDetails(): Promise<Country[]> {
+    return this.countriesService.getListOfCountriesWithDetails();
+  }
+
   @Get('country/:id')
-  getCountryById(@Param('id') id: string) {
+  getCountryById(@Param('id') id: string): Promise<Country> {
     return this.countriesService.getCountryById(id);
   }
 
