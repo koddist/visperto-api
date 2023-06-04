@@ -44,12 +44,12 @@ export class AppController {
 
   @Get('visa_req?')
   getVisaReq(
-    @Query('passport') passportCountryName: string,
-    @Query('country') travelCountryId: string,
+    @Query('travelCountry') travelCountryName: string,
+    @Query('passCountryId') passCountryId: string,
   ) {
     return this.visaRequirementsService.getVisaReqByCountry(
-      passportCountryName,
-      travelCountryId,
+      travelCountryName,
+      passCountryId,
     );
   }
 

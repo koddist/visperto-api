@@ -192,11 +192,11 @@ export class VisaRequirementsService {
   }
 
   public async getVisaReqByCountry(
-    passportCountryName: string,
-    travelCountryId: string,
+    travelCountryName: string,
+    passCountryId: string,
   ) {
     const visaCountry: VisaCountryDto = await this.visaCountryModel.findById(
-      travelCountryId,
+      passCountryId,
     );
 
     if (!visaCountry) {
@@ -204,7 +204,7 @@ export class VisaRequirementsService {
     }
 
     const visaReq = visaCountry.visaRequirements.find(
-      (visaReq) => visaReq.country === passportCountryName,
+      (visaReq) => visaReq.country === travelCountryName,
     );
     if (!visaReq) {
       throw new NotFoundException('Visa requirement not found');
