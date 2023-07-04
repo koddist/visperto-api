@@ -63,9 +63,23 @@ export class AppController {
     return this.exchangeRateService.getExchangeRate(base, quote);
   }
 
-  @Get('time')
-  getTime() {
-    const date = new Date();
-    return { time: date.toISOString() };
+  @Get('time?')
+  getTime(@Query('utc') timezoneOffset: string) {
+    const offsetRegex = /([-+])(\d{2}):(\d{2})/;
+    const [, sign, hoursStr, minutesStr] = timezoneOffset.match(offsetRegex);
+    const hours = Number(hoursStr);
+    const minutes = Number(minutesStr);
+
+    const currentDate = new Date();
+    const targetOffset = hours * 60 + minutes;
+    const currentDateMinutes = currentDate.getMinutes();
+    const currentTimeZoneOffset = currentDate.getTimezoneOffset();
+    const date = currentDate.setMinutes(
+      currentDateMinutes +
+        (sign === '+' ? targetOffset : -targetOffset) +
+        currentTimeZoneOffset,
+    );
+
+    return { time: date };
   }
 }
