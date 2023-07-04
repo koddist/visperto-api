@@ -1,19 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CountryNamesFix } from '../../enum/country-names-fix';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
-import { map } from 'rxjs';
+import { map, forkJoin, lastValueFrom } from 'rxjs';
 import { Islands } from '../../enum/islands-list';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import {
   VisaCountry,
   VisaCountryDocument,
 } from '../../schemas/visa_country.schema';
-import { Connection, Model } from 'mongoose';
+import { Connection, Model, Promise } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
 import { LogtailService } from '../logtail/logtail.service';
 import { Cron } from '@nestjs/schedule';
-import { CountryListItemInterface } from "../../interfaces/country-list-item.interface";
+import { CountryListItemInterface } from '../../interfaces/country-list-item.interface';
 
 @Injectable()
 export class CountriesService {
@@ -129,7 +129,57 @@ export class CountriesService {
             travelRestrictionsId: 1,
           },
         },
-      ]).then((countries: CountryListItemInterface[]) => countries);
+      ])
+      .then((countries: CountryListItemInterface[]) => countries);
+  }
+
+  @Cron('00 03 2 * *', {
+    name: 'update_countries',
+    timeZone: 'Europe/Paris',
+  })
+  public async updateCountriesTimezone() {
+    const countries = await this.countryModel.find().exec();
+    const updateObservables = [];
+
+    for (const capital of countries) {
+      const { id } = capital;
+      const { latlng } = capital.capitalInfo;
+      const countryDocument = await this.countryModel.findOne({ _id: id });
+
+      if (countryDocument) {
+        const updateObservable = this.httpService
+          .get(
+            `https://api.ipgeolocation.io/timezone?apiKey=${process.env.IPGOOLOCATION_API_KEY}&lat=${latlng[0]}&long=${latlng[1]}`,
+          )
+          .pipe(
+            map(async (res) => {
+              const isUpdated =
+                (await this.countryModel.findByIdAndUpdate(
+                  { _id: id },
+                  { $set: { timezone: res.data } },
+                  { new: true },
+                )) !== null;
+
+              if (!isUpdated) {
+                return this.logtailService.logError(
+                  'Timezone information is not updated',
+                  'countries',
+                  `Failed to update the timezone information of country document with ID ${id}.`,
+                );
+              }
+            }),
+          );
+
+        updateObservables.push(updateObservable);
+      } else {
+        return this.logtailService.logError(
+          'Timezone information is not updated',
+          'countries',
+          `Failed to find the document with ID ${id}.`,
+        );
+      }
+    }
+    await lastValueFrom(forkJoin(updateObservables));
   }
 
   public async getCountryById(countryId: string): Promise<Country> {

@@ -17,6 +17,7 @@ import {
 } from './schemas/travel-restrictions.schema';
 import { ExchangeRateService } from './services/exchange-rate/exchange-rate.service';
 import { LogtailService } from './services/logtail/logtail.service';
+import { SelectedCountriesService } from './services/selected-countries/selected-countries.service';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { LogtailService } from './services/logtail/logtail.service';
     TravelRestrictionsService,
     ExchangeRateService,
     LogtailService,
+    SelectedCountriesService,
   ],
 })
 export class AppModule {}
