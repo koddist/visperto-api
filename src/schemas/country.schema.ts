@@ -13,6 +13,14 @@ export class Country extends Document {
   )
   name: Record<string, any>;
 
+  @Prop(
+    raw({
+      timezone_offset: { type: Number },
+      timezone_offset_with_dst: { type: Number },
+    }),
+  )
+  timezone: Record<string, any>;
+
   @Prop([String])
   tld: string[];
 

@@ -6,6 +6,7 @@ import { TravelRestrictionsService } from './services/travel-restrictions/travel
 import { ExchangeRateService } from './services/exchange-rate/exchange-rate.service';
 import { Country } from './schemas/country.schema';
 import { CountryListItemInterface } from './interfaces/country-list-item.interface';
+import { SelectedCountriesService } from './services/selected-countries/selected-countries.service';
 
 @Controller()
 export class AppController {
@@ -15,6 +16,7 @@ export class AppController {
     private readonly weatherService: WeatherService,
     private readonly travelRestrictionsService: TravelRestrictionsService,
     private readonly exchangeRateService: ExchangeRateService,
+    private readonly selectedCountriesService: SelectedCountriesService,
   ) {}
 
   @Get('')
@@ -42,6 +44,11 @@ export class AppController {
     return this.travelRestrictionsService.getTravelRestrictionById(id);
   }
 
+  @Get('timezones')
+  getTimezones() {
+    return this.countriesService.updateCountriesTimezone();
+  }
+
   @Get('visa_req?')
   getVisaReq(
     @Query('travelCountry') travelCountryName: string,
@@ -63,23 +70,21 @@ export class AppController {
     return this.exchangeRateService.getExchangeRate(base, quote);
   }
 
-  @Get('time?')
-  getTime(@Query('utc') timezoneOffset: string) {
-    const offsetRegex = /([-+])(\d{2}):(\d{2})/;
-    const [, sign, hoursStr, minutesStr] = timezoneOffset.match(offsetRegex);
-    const hours = Number(hoursStr);
-    const minutes = Number(minutesStr);
+  @Get('selected')
+  getFeaturedCountries() {
+    return this.selectedCountriesService.getSelectedCountriesImages();
+  }
 
+  @Get('time?')
+  getTime(@Query('offset') timezoneOffset: number) {
+    const hours = Number(timezoneOffset);
     const currentDate = new Date();
-    const targetOffset = hours * 60 + minutes;
+    const targetOffset = hours * 60;
     const currentDateMinutes = currentDate.getMinutes();
     const currentTimeZoneOffset = currentDate.getTimezoneOffset();
     const date = currentDate.setMinutes(
-      currentDateMinutes +
-        (sign === '+' ? targetOffset : -targetOffset) +
-        currentTimeZoneOffset,
+      currentDateMinutes + targetOffset + currentTimeZoneOffset,
     );
-
     return { time: date };
   }
 }
