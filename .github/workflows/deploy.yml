@@ -21,6 +21,8 @@ jobs:
         MONGODB_CLOUD_PASSWORD: ${{ secrets.MONGODB_CLOUD_PASSWORD }}
         AMADEUS_CLIENT_ID: ${{ secrets.AMADEUS_CLIENT_ID }}
         AMADEUS_CLIENT_SECRET: ${{ secrets.AMADEUS_CLIENT_SECRET }}
+        IPGEOLOCATION_API_KEY: ${{ secrets.IPGEOLOCATION_API_KEY }}
+        UNSPLASH_API_KEY: ${{ secrets.UNSPLASH_API_KEY }}
       with:
         app_yaml_path: "app.yaml"
 
