@@ -149,7 +149,7 @@ export class CountriesService {
       if (countryDocument) {
         const updateObservable = this.httpService
           .get(
-            `https://api.ipgeolocation.io/timezone?apiKey=${process.env.IPGOOLOCATION_API_KEY}&lat=${latlng[0]}&long=${latlng[1]}`,
+            `https://api.ipgeolocation.io/timezone?apiKey=${process.env.IPGEOLOCATION_API_KEY}&lat=${latlng[0]}&long=${latlng[1]}`,
           )
           .pipe(
             map(async (res) => {
