@@ -5,7 +5,6 @@ import { LogtailService } from '../logtail/logtail.service';
 
 @Injectable()
 export class ExchangeRateService {
-  private readonly apiAccessKey = 'c0e18f321af8a40b013a12468e0a1268';
   constructor(
     private readonly httpService: HttpService,
     private readonly logtailService: LogtailService,
@@ -17,14 +16,13 @@ export class ExchangeRateService {
   ): Observable<any> {
     return this.httpService
       .get(
-        `http://api.exchangerate.host/live?access_key=${this.apiAccessKey}&source=${baseCurrency}`,
+        `https://api.fxratesapi.com/latest?base=${baseCurrency}&currencies=${quoteCurrency}&resolution=1m&amount=1&places=6&format=json`,
       )
       .pipe(
         map((res) => {
-          if (res.data && res.data.quotes && baseCurrency !== quoteCurrency) {
+          if (res.data && res.data.rates && baseCurrency !== quoteCurrency) {
             return {
-              [quoteCurrency]:
-                res.data.quotes[`${baseCurrency}${quoteCurrency}`],
+              [quoteCurrency]: res.data.rates[`${quoteCurrency}`],
             };
           } else if (baseCurrency === quoteCurrency) {
             return { [quoteCurrency]: 1 };
