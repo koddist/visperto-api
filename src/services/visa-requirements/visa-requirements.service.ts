@@ -1,5 +1,5 @@
 import * as puppeteer from 'puppeteer';
-import { Cron } from '@nestjs/schedule';
+// import { Cron } from '@nestjs/schedule';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
@@ -11,6 +11,7 @@ import {
 import { VisaCountryDto } from '../../dto/visa_country.dto';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
 import { LogtailService } from '../logtail/logtail.service';
+import { CountryNameService } from '../country-name/country-name.service';
 
 @Injectable()
 export class VisaRequirementsService {
@@ -21,6 +22,7 @@ export class VisaRequirementsService {
     private readonly countryModel: Model<CountryDocument>,
     @InjectConnection() private connection: Connection,
     private readonly logtailService: LogtailService,
+    private readonly countryNameService: CountryNameService,
   ) {}
 
   private async getUrls(): Promise<string[]> {
@@ -80,6 +82,9 @@ export class VisaRequirementsService {
   private async getVisaReqByUrl(url: string) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
+    await page.exposeFunction('checkAlternativeName', (countryName: string) =>
+      this.countryNameService.checkAlternativeCountryName(countryName),
+    );
 
     await page
       .goto(url, { waitUntil: 'networkidle2' })
@@ -104,9 +109,11 @@ export class VisaRequirementsService {
           visaRequirements: [],
         };
 
-        Array.from(visaReqsTable).forEach((country) => {
+        Array.from(visaReqsTable).forEach(async (country) => {
           const visaReqs = {
-            country: (country.childNodes[1] as HTMLElement).outerText,
+            country: await (window as any).checkAlternativeName(
+              (country.childNodes[1] as HTMLElement).outerText,
+            ),
             visa: country.childNodes[3].textContent
               .split(/""|\/|days|day/)
               .map((i) => i.trim())
