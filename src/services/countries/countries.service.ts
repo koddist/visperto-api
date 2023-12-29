@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CountryNamesFix } from '../../enum/country-names-fix';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
 import { map, forkJoin, lastValueFrom } from 'rxjs';
 import { Islands } from '../../enum/islands-list';
@@ -12,8 +11,9 @@ import { Connection, Model, Promise } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
 import { LogtailService } from '../logtail/logtail.service';
-import { Cron } from '@nestjs/schedule';
+// import { Cron } from '@nestjs/schedule';
 import { CountryListItemInterface } from '../../interfaces/country-list-item.interface';
+import { CountryNameService } from '../country-name/country-name.service';
 
 @Injectable()
 export class CountriesService {
@@ -25,25 +25,20 @@ export class CountriesService {
     @InjectConnection() private connection: Connection,
     private readonly httpService: HttpService,
     private readonly logtailService: LogtailService,
+    private readonly countryNameService: CountryNameService,
   ) {}
 
-  @Cron('00 03 2 * *', {
-    name: 'update_countries',
-    timeZone: 'Europe/Paris',
-  })
-  private async getCountries(): Promise<any> {
-    const fixCountryName = (countryName: string): string => {
-      const correctedName = CountryNamesFix.filter((country) =>
-        country.alternatives.includes(countryName),
-      );
-
-      return correctedName.length > 0 ? correctedName[0].standard : countryName;
-    };
-
+  // @Cron('00 03 2 * *', {
+  //   name: 'update_countries',
+  //   timeZone: 'Europe/Paris',
+  // })
+  public async getCountries(): Promise<any> {
     const countryNames: string[] = await this.visaCountryModel
       .distinct('name')
       .then((countries) => {
-        return countries.map((country) => fixCountryName(country));
+        return countries.map((country) =>
+          this.countryNameService.checkAlternativeCountryName(country),
+        );
       });
 
     const fixCountryNames = (countriesData) => {
@@ -51,7 +46,9 @@ export class CountriesService {
         return {
           ...countryData,
           name: {
-            common: fixCountryName(countryData.name.common),
+            common: this.countryNameService.checkAlternativeCountryName(
+              countryData.name.common,
+            ),
             official: countryData.name.official,
           },
         };
@@ -133,10 +130,10 @@ export class CountriesService {
       .then((countries: CountryListItemInterface[]) => countries);
   }
 
-  @Cron('00 03 2 * *', {
-    name: 'update_countries',
-    timeZone: 'Europe/Paris',
-  })
+  // @Cron('00 03 2 * *', {
+  //   name: 'update_countries',
+  //   timeZone: 'Europe/Paris',
+  // })
   public async updateCountriesTimezone() {
     const countries = await this.countryModel.find().exec();
     const updateObservables = [];

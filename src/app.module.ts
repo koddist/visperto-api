@@ -18,6 +18,7 @@ import {
 import { ExchangeRateService } from './services/exchange-rate/exchange-rate.service';
 import { LogtailService } from './services/logtail/logtail.service';
 import { SelectedCountriesService } from './services/selected-countries/selected-countries.service';
+import { CountryNameService } from './services/country-name/country-name.service';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { SelectedCountriesService } from './services/selected-countries/selected
     ExchangeRateService,
     LogtailService,
     SelectedCountriesService,
+    CountryNameService,
   ],
 })
 export class AppModule {}
