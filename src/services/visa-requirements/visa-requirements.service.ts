@@ -12,6 +12,7 @@ import { VisaCountryDto } from '../../dto/visa_country.dto';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
 import { LogtailService } from '../logtail/logtail.service';
 import { CountryNameService } from '../country-name/country-name.service';
+import { AlternativeCountryNames } from '../../enum/alternative-country-names';
 
 @Injectable()
 export class VisaRequirementsService {
@@ -82,9 +83,21 @@ export class VisaRequirementsService {
   private async getVisaReqByUrl(url: string) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-    await page.exposeFunction('checkAlternativeName', (countryName: string) =>
-      this.countryNameService.checkAlternativeCountryName(countryName),
-    );
+
+    // Find alternative country names and replace them with the common ones
+    await page.exposeFunction('checkAlternativeName', (countryName: string) => {
+      return new Promise((resolve) => {
+        for (const country of AlternativeCountryNames) {
+          const foundAlternative = country.alternatives.find(
+            (altName) => altName === countryName,
+          );
+          if (foundAlternative) {
+            resolve(country.standard);
+          }
+        }
+        resolve(countryName);
+      });
+    });
 
     await page
       .goto(url, { waitUntil: 'networkidle2' })
@@ -97,9 +110,11 @@ export class VisaRequirementsService {
       );
 
     return await page
-      .evaluate(() => {
-        const countryName = document.querySelector('.psprt-dashboard-title')
-          .childNodes[1].childNodes[2].textContent;
+      .evaluate(async () => {
+        const countryName = await (window as any).checkAlternativeName(
+          document.querySelector('.psprt-dashboard-title').childNodes[1]
+            .childNodes[2].textContent,
+        );
         const visaReqsTable = document.querySelector(
           '.psprt-dashboard-table tbody',
         ).children;
@@ -109,7 +124,7 @@ export class VisaRequirementsService {
           visaRequirements: [],
         };
 
-        Array.from(visaReqsTable).forEach(async (country) => {
+        for (const country of Array.from(visaReqsTable)) {
           const visaReqs = {
             country: await (window as any).checkAlternativeName(
               (country.childNodes[1] as HTMLElement).outerText,
@@ -128,7 +143,7 @@ export class VisaRequirementsService {
             ),
           };
           visaCountry.visaRequirements.push(visaReqs);
-        });
+        }
 
         return visaCountry;
       })

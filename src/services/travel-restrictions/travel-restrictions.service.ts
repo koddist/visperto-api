@@ -57,11 +57,11 @@ export class TravelRestrictionsService {
   }
 
   // At 05:00 on day-of-month 1
-  @Cron('00 03 3 * *', {
-    name: 'update_travel_restrictions',
-    timeZone: 'Europe/Paris',
-  })
-  private async getTravelRestrictions() {
+  // @Cron('00 03 3 * *', {
+  //   name: 'update_travel_restrictions',
+  //   timeZone: 'Europe/Paris',
+  // })
+  public async getTravelRestrictions() {
     const token = await lastValueFrom(this.getAuthorizationToken()).then(
       (auth) => auth.access_token,
     );
