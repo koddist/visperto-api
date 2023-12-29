@@ -1,5 +1,5 @@
 import * as puppeteer from 'puppeteer';
-import { Cron } from '@nestjs/schedule';
+// import { Cron } from '@nestjs/schedule';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
@@ -11,6 +11,8 @@ import {
 import { VisaCountryDto } from '../../dto/visa_country.dto';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
 import { LogtailService } from '../logtail/logtail.service';
+import { CountryNameService } from '../country-name/country-name.service';
+import { AlternativeCountryNames } from '../../enum/alternative-country-names';
 
 @Injectable()
 export class VisaRequirementsService {
@@ -21,6 +23,7 @@ export class VisaRequirementsService {
     private readonly countryModel: Model<CountryDocument>,
     @InjectConnection() private connection: Connection,
     private readonly logtailService: LogtailService,
+    private readonly countryNameService: CountryNameService,
   ) {}
 
   private async getUrls(): Promise<string[]> {
@@ -81,6 +84,21 @@ export class VisaRequirementsService {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
+    // Find alternative country names and replace them with the common ones
+    await page.exposeFunction('checkAlternativeName', (countryName: string) => {
+      return new Promise((resolve) => {
+        for (const country of AlternativeCountryNames) {
+          const foundAlternative = country.alternatives.find(
+            (altName) => altName === countryName,
+          );
+          if (foundAlternative) {
+            resolve(country.standard);
+          }
+        }
+        resolve(countryName);
+      });
+    });
+
     await page
       .goto(url, { waitUntil: 'networkidle2' })
       .catch((e) =>
@@ -92,9 +110,11 @@ export class VisaRequirementsService {
       );
 
     return await page
-      .evaluate(() => {
-        const countryName = document.querySelector('.psprt-dashboard-title')
-          .childNodes[1].childNodes[2].textContent;
+      .evaluate(async () => {
+        const countryName = await (window as any).checkAlternativeName(
+          document.querySelector('.psprt-dashboard-title').childNodes[1]
+            .childNodes[2].textContent,
+        );
         const visaReqsTable = document.querySelector(
           '.psprt-dashboard-table tbody',
         ).children;
@@ -104,9 +124,11 @@ export class VisaRequirementsService {
           visaRequirements: [],
         };
 
-        Array.from(visaReqsTable).forEach((country) => {
+        for (const country of Array.from(visaReqsTable)) {
           const visaReqs = {
-            country: (country.childNodes[1] as HTMLElement).outerText,
+            country: await (window as any).checkAlternativeName(
+              (country.childNodes[1] as HTMLElement).outerText,
+            ),
             visa: country.childNodes[3].textContent
               .split(/""|\/|days|day/)
               .map((i) => i.trim())
@@ -121,7 +143,7 @@ export class VisaRequirementsService {
             ),
           };
           visaCountry.visaRequirements.push(visaReqs);
-        });
+        }
 
         return visaCountry;
       })

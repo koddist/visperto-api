@@ -4,12 +4,12 @@ import { AlternativeCountryNames } from '../../enum/alternative-country-names';
 @Injectable()
 export class CountryNameService {
   public checkAlternativeCountryName(countryName: string) {
-    for (const alternativeName of AlternativeCountryNames) {
-      const foundAlternative = alternativeName.alternatives.find((alt) =>
-        alt.toLowerCase().includes(countryName.toLowerCase()),
+    for (const country of AlternativeCountryNames) {
+      const foundAlternative = country.alternatives.find(
+        (altName) => altName === countryName,
       );
       if (foundAlternative) {
-        return alternativeName.standard;
+        return country.standard;
       }
     }
     return countryName;
