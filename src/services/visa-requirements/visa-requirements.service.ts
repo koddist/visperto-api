@@ -106,15 +106,14 @@ export class VisaRequirementsService {
 
         Array.from(visaReqsTable).forEach((country) => {
           const visaReqs = {
-            country: (country.childNodes[0] as HTMLElement).children[1]
-              .textContent,
-            visa: country.childNodes[1].textContent
+            country: (country.childNodes[1] as HTMLElement).outerText,
+            visa: country.childNodes[3].textContent
               .split(/""|\/|days|day/)
               .map((i) => i.trim())
               .filter((c) => c !== '')
               .filter((i) => isNaN(Number(i))),
             days: Number(
-              country.childNodes[1].textContent
+              country.childNodes[3].textContent
                 .split(/""|\/|days|day/)
                 .map((i) => i.trim())
                 .filter((c) => c !== '')
@@ -150,10 +149,10 @@ export class VisaRequirementsService {
   }
 
   // Every year at 03:00 on day-of-month 1 in January, April, July, and October
-  @Cron('00 03 1 1,4,7,10 *', {
-    name: 'update_visa_reqs',
-    timeZone: 'Europe/Paris',
-  })
+  // @Cron('00 03 1 1,4,7,10 *', {
+  //   name: 'update_visa_reqs',
+  //   timeZone: 'Europe/Paris',
+  // })
   private async updateVisaReqsData(): Promise<any> {
     return await this.getAllVisaReqs()
       .then((countries) => {

@@ -1,4 +1,6 @@
-export const CountryNamesFix = [
+import { CountryNameInterface } from '../interfaces/country-name.interface';
+
+export const AlternativeCountryNames: CountryNameInterface[] = [
   {
     standard: 'United States of America',
     alternatives: ['United States'],
