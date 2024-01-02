@@ -5,13 +5,8 @@ import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.int
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const githubActionsIpPrefix = /^13\.88\./;
   const corsOptions: CorsOptions = {
-    origin: [
-      'https://visperto.com',
-      'https://www.visperto.com',
-      githubActionsIpPrefix,
-    ],
+    origin: ['https://visperto.com', 'https://www.visperto.com'],
     credentials: true,
   };
   app.enableCors(corsOptions);
