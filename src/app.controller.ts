@@ -81,7 +81,10 @@ export class AppController {
     const currentDate = new Date();
     const targetOffset = hours * 60;
     const currentDateMinutes = currentDate.getMinutes();
-    const date = currentDate.setMinutes(currentDateMinutes + targetOffset);
+    const resetOffset = 60; // reset timezone offset to GMT0 if server's timezone is Germany
+    const date = currentDate.setMinutes(
+      currentDateMinutes + targetOffset - resetOffset,
+    );
     return { time: date };
   }
 }
