@@ -1,5 +1,5 @@
-import * as puppeteer from 'puppeteer';
-// import { Cron } from '@nestjs/schedule';
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
@@ -12,7 +12,6 @@ import { VisaCountryDto } from '../../dto/visa_country.dto';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
 import { LogtailService } from '../logtail/logtail.service';
 import { CountryNameService } from '../country-name/country-name.service';
-import { AlternativeCountryNames } from '../../enum/alternative-country-names';
 
 @Injectable()
 export class VisaRequirementsService {
@@ -27,7 +26,9 @@ export class VisaRequirementsService {
   ) {}
 
   private async getUrls(): Promise<string[]> {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer
+      .use(StealthPlugin())
+      .launch({ headless: true, args: ['--no-sandbox'] });
     const page = await browser.newPage();
 
     await page
@@ -41,6 +42,8 @@ export class VisaRequirementsService {
           e,
         ),
       );
+
+    await page.waitForSelector('#passports');
 
     return await page
       .evaluate(() => {
@@ -81,23 +84,18 @@ export class VisaRequirementsService {
   }
 
   private async getVisaReqByUrl(url: string) {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer
+      .use(StealthPlugin())
+      .launch({ headless: true, args: ['--no-sandbox'] });
     const page = await browser.newPage();
 
     // Find alternative country names and replace them with the common ones
-    await page.exposeFunction('checkAlternativeName', (countryName: string) => {
-      return new Promise((resolve) => {
-        for (const country of AlternativeCountryNames) {
-          const foundAlternative = country.alternatives.find(
-            (altName) => altName === countryName,
-          );
-          if (foundAlternative) {
-            resolve(country.standard);
-          }
-        }
-        resolve(countryName);
-      });
-    });
+    await page.exposeFunction(
+      'checkAlternativeName',
+      async (countryName: string) => {
+        return this.countryNameService.checkAlternativeCountryName(countryName);
+      },
+    );
 
     await page
       .goto(url, { waitUntil: 'networkidle2' })
@@ -144,7 +142,6 @@ export class VisaRequirementsService {
           };
           visaCountry.visaRequirements.push(visaReqs);
         }
-
         return visaCountry;
       })
       .finally(() => {
@@ -171,45 +168,38 @@ export class VisaRequirementsService {
   }
 
   // Every year at 03:00 on day-of-month 1 in January, April, July, and October
-  // @Cron('00 03 1 1,4,7,10 *', {
-  //   name: 'update_visa_reqs',
-  //   timeZone: 'Europe/Paris',
-  // })
-  private async updateVisaReqsData(): Promise<any> {
-    return await this.getAllVisaReqs()
-      .then((countries) => {
-        const isCountriesLengthEqual =
-          countries.length === VisaCountriesEnum.LENGTH_OF_COUNTRIES;
-        const isVisaStatusExist = this.validateCountryData(
-          countries,
-          VisaCountriesEnum.TEST_COUNTRY,
-          VisaCountriesEnum.TEST_TRAVEL_TO_COUNTRY,
-          VisaCountriesEnum.TEST_VISA_STATUS,
-        );
+  public async updateVisaReqsData(): Promise<void> {
+    try {
+      const countries = await this.getAllVisaReqs();
 
-        if (isCountriesLengthEqual && isVisaStatusExist) {
-          return this.connection.db
-            .dropCollection('visaRequirements')
-            .then(() => {
-              return countries.forEach(async (country: VisaCountryDto) => {
-                const countryData = new this.visaCountryModel(country);
-                return await countryData.save();
-              });
-            })
-            .then(() =>
-              this.logtailService.logInfo(
-                'Countries visa requirements data has been successfully updated.',
-              ),
-            );
-        }
-      })
-      .catch((e) =>
-        this.logtailService.logError(
-          'visa requirements data of countries are not updated',
-          'visaRequirements',
-          e,
-        ),
+      const isCountriesLengthEqual =
+        countries.length === VisaCountriesEnum.LENGTH_OF_COUNTRIES;
+      const isVisaStatusExist = this.validateCountryData(
+        countries,
+        VisaCountriesEnum.TEST_COUNTRY,
+        VisaCountriesEnum.TEST_TRAVEL_TO_COUNTRY,
+        VisaCountriesEnum.TEST_VISA_STATUS,
       );
+
+      if (isCountriesLengthEqual && isVisaStatusExist) {
+        await this.connection.db.dropCollection('visaRequirements');
+
+        for (const country of countries) {
+          const countryData = new this.visaCountryModel(country);
+          await countryData.save();
+        }
+
+        await this.logtailService.logInfo(
+          'Countries visa requirements data has been successfully updated.',
+        );
+      }
+    } catch (error) {
+      await this.logtailService.logError(
+        'Visa requirements data of countries are not updated',
+        'visaRequirements',
+        error,
+      );
+    }
   }
 
   public async getVisaReqByCountry(

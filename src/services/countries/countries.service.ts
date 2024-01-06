@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { VisaCountriesEnum } from '../../enum/visa-countries.enum';
-import { map, forkJoin, lastValueFrom } from 'rxjs';
+import { forkJoin, lastValueFrom, map } from 'rxjs';
 import { Islands } from '../../enum/islands-list';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import {
@@ -11,7 +11,6 @@ import { Connection, Model, Promise } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
 import { LogtailService } from '../logtail/logtail.service';
-// import { Cron } from '@nestjs/schedule';
 import { CountryListItemInterface } from '../../interfaces/country-list-item.interface';
 import { CountryNameService } from '../country-name/country-name.service';
 
@@ -28,62 +27,65 @@ export class CountriesService {
     private readonly countryNameService: CountryNameService,
   ) {}
 
-  // @Cron('00 03 2 * *', {
-  //   name: 'update_countries',
-  //   timeZone: 'Europe/Paris',
-  // })
-  public async getCountries(): Promise<any> {
-    const countryNames: string[] = await this.visaCountryModel
-      .distinct('name')
-      .then((countries) => {
-        return countries.map((country) =>
-          this.countryNameService.checkAlternativeCountryName(country),
-        );
-      });
+  // at 3:00 AM on the 2nd day of every month
+  public async updateCountries(): Promise<void> {
+    try {
+      const countriesData = await this.fetchCountriesData();
+      const fixedCountriesData = this.fixCountryNames(countriesData);
+      const filteredCountriesData = await this.filterCountries(
+        fixedCountriesData,
+      );
+      await this.updateDatabase(filteredCountriesData);
+    } catch (error) {
+      console.error('Error updating countries:', error);
+      this.logtailService.logError(
+        'Failed to update general countries data',
+        'countries',
+        error.message,
+      );
+    }
+  }
 
-    const fixCountryNames = (countriesData) => {
-      return countriesData.data.map((countryData) => {
-        return {
-          ...countryData,
-          name: {
-            common: this.countryNameService.checkAlternativeCountryName(
-              countryData.name.common,
-            ),
-            official: countryData.name.official,
-          },
-        };
-      });
-    };
-
-    return this.httpService.get(VisaCountriesEnum.REST_COUNTRIES_API_URL).pipe(
-      map(async (res) => {
-        const fixedNames = fixCountryNames(res);
-
-        const countriesData = await fixedNames.filter((countryData) => {
-          return [countryData.name.common, countryData.name.official].some(
-            (country) =>
-              countryNames.includes(country) &&
-              !Islands.includes(countryData.name.common),
-          );
-        });
-
-        return await this.connection.db.dropCollection('countries').then(() => {
-          this.countryModel.insertMany(countriesData, (error) => {
-            if (error) {
-              return this.logtailService.logError(
-                'General countries data are not updated',
-                'countries',
-                error.message,
-              );
-            } else {
-              return this.logtailService.logInfo(
-                'General countries data has been successfully updated.',
-              );
-            }
-          });
-        });
-      }),
+  private async fetchCountriesData(): Promise<any[]> {
+    return await lastValueFrom(
+      this.httpService
+        .get(VisaCountriesEnum.REST_COUNTRIES_API_URL)
+        .pipe(map((response) => response.data)),
     );
+  }
+
+  private fixCountryNames(countriesData: any[]): any[] {
+    return countriesData.map((countryData) => ({
+      ...countryData,
+      name: {
+        common: this.countryNameService.checkAlternativeCountryName(
+          countryData.name.common,
+        ),
+        official: countryData.name.official,
+      },
+    }));
+  }
+
+  private async filterCountries(countriesData: any[]): Promise<any[]> {
+    return countriesData.filter((countryData) => {
+      return !Islands.includes(countryData.name.common);
+    });
+  }
+
+  private async updateDatabase(countriesData: any[]): Promise<void> {
+    try {
+      await this.countryModel.deleteMany({});
+      await this.countryModel.insertMany(countriesData);
+      this.logtailService.logInfo(
+        'General countries data has been successfully updated.',
+      );
+    } catch (error) {
+      this.logtailService.logError(
+        'General countries data are not updated',
+        'countries',
+        error.message,
+      );
+    }
   }
 
   public async getListOfCountriesWithDetails(): Promise<Country[]> {
@@ -102,19 +104,8 @@ export class CountriesService {
           },
         },
         {
-          $lookup: {
-            from: 'travelRestrictions',
-            localField: 'cca2',
-            foreignField: 'area.code',
-            as: 'travelRestrictions',
-          },
-        },
-        {
           $addFields: {
             visaRequirementsId: { $arrayElemAt: ['$visaRequirements._id', 0] },
-            travelRestrictionsId: {
-              $arrayElemAt: ['$travelRestrictions._id', 0],
-            },
             name: '$name.common',
           },
         },
@@ -123,17 +114,13 @@ export class CountriesService {
             _id: 1,
             name: 1,
             visaRequirementsId: 1,
-            travelRestrictionsId: 1,
           },
         },
       ])
       .then((countries: CountryListItemInterface[]) => countries);
   }
 
-  // @Cron('00 03 2 * *', {
-  //   name: 'update_countries',
-  //   timeZone: 'Europe/Paris',
-  // })
+  // at 3:00 AM on the 2nd day of every month
   public async updateCountriesTimezone() {
     const countries = await this.countryModel.find().exec();
     const updateObservables = [];
