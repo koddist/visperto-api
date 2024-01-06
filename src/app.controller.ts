@@ -81,10 +81,7 @@ export class AppController {
     const currentDate = new Date();
     const targetOffset = hours * 60;
     const currentDateMinutes = currentDate.getMinutes();
-    const currentTimeZoneOffset = currentDate.getTimezoneOffset();
-    const date = currentDate.setMinutes(
-      currentDateMinutes + targetOffset + currentTimeZoneOffset,
-    );
+    const date = currentDate.setMinutes(currentDateMinutes + targetOffset);
     return { time: date };
   }
 }
