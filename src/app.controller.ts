@@ -24,6 +24,11 @@ export class AppController {
     return { message: 'Hi 👋🏻' };
   }
 
+  @Get('update-countries')
+  updateCountriesData(): Promise<CountryListItemInterface[]> {
+    return this.countriesService.updateCountriesData();
+  }
+
   @Get('countries')
   getListOfCountries(): Promise<CountryListItemInterface[]> {
     return this.countriesService.getListOfCountries();

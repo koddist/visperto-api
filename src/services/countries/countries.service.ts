@@ -11,7 +11,6 @@ import { Connection, Model, Promise } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
 import { LogtailService } from '../logtail/logtail.service';
-// import { Cron } from '@nestjs/schedule';
 import { CountryListItemInterface } from '../../interfaces/country-list-item.interface';
 import { CountryNameService } from '../country-name/country-name.service';
 
@@ -28,11 +27,7 @@ export class CountriesService {
     private readonly countryNameService: CountryNameService,
   ) {}
 
-  // @Cron('00 03 2 * *', {
-  //   name: 'update_countries',
-  //   timeZone: 'Europe/Paris',
-  // })
-  public async getCountries(): Promise<any> {
+  public async updateCountriesData(): Promise<any> {
     const countryNames: string[] = await this.visaCountryModel
       .distinct('name')
       .then((countries) => {
@@ -130,10 +125,6 @@ export class CountriesService {
       .then((countries: CountryListItemInterface[]) => countries);
   }
 
-  // @Cron('00 03 2 * *', {
-  //   name: 'update_countries',
-  //   timeZone: 'Europe/Paris',
-  // })
   public async updateCountriesTimezone() {
     const countries = await this.countryModel.find().exec();
     const updateObservables = [];

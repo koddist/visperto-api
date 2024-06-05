@@ -1,0 +1,448 @@
+{
+  "/Users/ayaz/Desktop/projects/visperto/api": {
+    "versionSfCore": null,
+    "versionFramework": "4.0.37",
+    "isWithinCompose": false,
+    "composeOrgName": null,
+    "servicePath": "/Users/ayaz/Desktop/projects/visperto/api",
+    "serviceConfigFileName": "serverless.yaml",
+    "service": {
+      "service": "visperto-api",
+      "useDotenv": true,
+      "plugins": [
+        "serverless-offline"
+      ],
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs20.x",
+        "region": "eu-central-1",
+        "environment": {
+          "MONGODB_USER": "dinav_dbadmin",
+          "MONGODB_PASSWORD": "<REDACTED>",
+          "MONGODB_DB": "dinav",
+          "MONGODB_CLOUD_USER": "dbadmin",
+          "MONGODB_CLOUD_PASSWORD": "<REDACTED>",
+          "LOGTAIL_TOKEN": "<REDACTED>",
+          "AMADEUS_CLIENT_ID": "76waNlCy0Gal8uwAWie3TOoLBizbaCbY",
+          "AMADEUS_CLIENT_SECRET": "<REDACTED>",
+          "IPGEOLOCATION_API_KEY": "<REDACTED>",
+          "UNSPLASH_API_KEY": "<REDACTED>"
+        },
+        "stage": "prod",
+        "versionFunctions": true,
+        "compiledCloudFormationTemplate": {
+          "AWSTemplateFormatVersion": "2010-09-09",
+          "Description": "The AWS CloudFormation template for this Serverless application",
+          "Resources": {
+            "ServerlessDeploymentBucket": {
+              "Type": "AWS::S3::Bucket",
+              "Properties": {
+                "BucketEncryption": {
+                  "ServerSideEncryptionConfiguration": [
+                    {
+                      "ServerSideEncryptionByDefault": {
+                        "SSEAlgorithm": "AES256"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "ServerlessDeploymentBucketPolicy": {
+              "Type": "AWS::S3::BucketPolicy",
+              "Properties": {
+                "Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "PolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "s3:*",
+                      "Effect": "Deny",
+                      "Principal": "*",
+                      "Resource": [
+                        {
+                          "Fn::Join": [
+                            "",
+                            [
+                              "arn:",
+                              {
+                                "Ref": "AWS::Partition"
+                              },
+                              ":s3:::",
+                              {
+                                "Ref": "ServerlessDeploymentBucket"
+                              },
+                              "/*"
+                            ]
+                          ]
+                        },
+                        {
+                          "Fn::Join": [
+                            "",
+                            [
+                              "arn:",
+                              {
+                                "Ref": "AWS::Partition"
+                              },
+                              ":s3:::",
+                              {
+                                "Ref": "ServerlessDeploymentBucket"
+                              }
+                            ]
+                          ]
+                        }
+                      ],
+                      "Condition": {
+                        "Bool": {
+                          "aws:SecureTransport": false
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "MainLogGroup": {
+              "Type": "AWS::Logs::LogGroup",
+              "Properties": {
+                "LogGroupName": "/aws/lambda/visperto-api-prod-main"
+              }
+            },
+            "UpdateCountriesLogGroup": {
+              "Type": "AWS::Logs::LogGroup",
+              "Properties": {
+                "LogGroupName": "/aws/lambda/visperto-api-prod-updateCountries"
+              }
+            },
+            "UpdateCountriesTimezoneLogGroup": {
+              "Type": "AWS::Logs::LogGroup",
+              "Properties": {
+                "LogGroupName": "/aws/lambda/visperto-api-prod-updateCountriesTimezone"
+              }
+            },
+            "IamRoleLambdaExecution": {
+              "Type": "AWS::IAM::Role",
+              "Properties": {
+                "AssumeRolePolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": [
+                          "lambda.amazonaws.com"
+                        ]
+                      },
+                      "Action": [
+                        "sts:AssumeRole"
+                      ]
+                    }
+                  ]
+                },
+                "Policies": [
+                  {
+                    "PolicyName": {
+                      "Fn::Join": [
+                        "-",
+                        [
+                          "visperto-api",
+                          "prod",
+                          "lambda"
+                        ]
+                      ]
+                    },
+                    "PolicyDocument": {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "logs:CreateLogStream",
+                            "logs:CreateLogGroup",
+                            "logs:TagResource"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/visperto-api-prod*:*"
+                            }
+                          ]
+                        },
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "logs:PutLogEvents"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/visperto-api-prod*:*:*"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "Path": "/",
+                "RoleName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      "visperto-api",
+                      "prod",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "lambdaRole"
+                    ]
+                  ]
+                }
+              }
+            }
+          },
+          "Outputs": {
+            "ServerlessDeploymentBucketName": {
+              "Value": {
+                "Ref": "ServerlessDeploymentBucket"
+              }
+            }
+          }
+        },
+        "coreCloudFormationTemplate": {
+          "AWSTemplateFormatVersion": "2010-09-09",
+          "Description": "The AWS CloudFormation template for this Serverless application",
+          "Resources": {
+            "ServerlessDeploymentBucket": {
+              "Type": "AWS::S3::Bucket",
+              "Properties": {
+                "BucketEncryption": {
+                  "ServerSideEncryptionConfiguration": [
+                    {
+                      "ServerSideEncryptionByDefault": {
+                        "SSEAlgorithm": "AES256"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "ServerlessDeploymentBucketPolicy": {
+              "Type": "AWS::S3::BucketPolicy",
+              "Properties": {
+                "Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "PolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "s3:*",
+                      "Effect": "Deny",
+                      "Principal": "*",
+                      "Resource": [
+                        {
+                          "Fn::Join": [
+                            "",
+                            [
+                              "arn:",
+                              {
+                                "Ref": "AWS::Partition"
+                              },
+                              ":s3:::",
+                              {
+                                "Ref": "ServerlessDeploymentBucket"
+                              },
+                              "/*"
+                            ]
+                          ]
+                        },
+                        {
+                          "Fn::Join": [
+                            "",
+                            [
+                              "arn:",
+                              {
+                                "Ref": "AWS::Partition"
+                              },
+                              ":s3:::",
+                              {
+                                "Ref": "ServerlessDeploymentBucket"
+                              }
+                            ]
+                          ]
+                        }
+                      ],
+                      "Condition": {
+                        "Bool": {
+                          "aws:SecureTransport": false
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "Outputs": {
+            "ServerlessDeploymentBucketName": {
+              "Value": {
+                "Ref": "ServerlessDeploymentBucket"
+              }
+            }
+          }
+        }
+      },
+      "functions": {
+        "main": {
+          "handler": "dist/serverless.handler",
+          "events": [
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/countries"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/countries_with_details"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/country/{id}"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/restriction/{id}"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/timezones"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/visa_req"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/weather"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/exchange"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/selected"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/time"
+              }
+            },
+            {
+              "httpApi": {
+                "method": "GET",
+                "path": "/update-countries"
+              }
+            }
+          ],
+          "name": "visperto-api-prod-main",
+          "package": {}
+        },
+        "updateCountries": {
+          "handler": "dist/serverless.updateCountries",
+          "events": [
+            {
+              "schedule": {
+                "method": "scheduler",
+                "rate": [
+                  "cron(0 3 2 * ? *)"
+                ],
+                "timezone": "Europe/Berlin"
+              }
+            }
+          ],
+          "name": "visperto-api-prod-updateCountries",
+          "package": {}
+        },
+        "updateCountriesTimezone": {
+          "handler": "dist/serverless.updateCountriesTimezone",
+          "events": [
+            {
+              "schedule": {
+                "method": "scheduler",
+                "rate": [
+                  "cron(0 5 2 * ? *)"
+                ],
+                "timezone": "Europe/Berlin"
+              }
+            }
+          ],
+          "name": "visperto-api-prod-updateCountriesTimezone",
+          "package": {}
+        }
+      }
+    },
+    "serviceRawFile": "service: visperto-api\nuseDotenv: true\nplugins:\n  - serverless-offline\n\nprovider:\n  name: aws\n  runtime: nodejs20.x\n  region: eu-central-1\n  environment:\n    MONGODB_USER: ${env:MONGODB_USER}\n    MONGODB_PASSWORD: ${env:MONGODB_PASSWORD}\n    MONGODB_DB: ${env:MONGODB_DB}\n    MONGODB_CLOUD_USER: ${env:MONGODB_CLOUD_USER}\n    MONGODB_CLOUD_PASSWORD: ${env:MONGODB_CLOUD_PASSWORD}\n    LOGTAIL_TOKEN: ${env:LOGTAIL_TOKEN}\n    AMADEUS_CLIENT_ID: ${env:AMADEUS_CLIENT_ID}\n    AMADEUS_CLIENT_SECRET: ${env:AMADEUS_CLIENT_SECRET}\n    IPGEOLOCATION_API_KEY: ${env:IPGEOLOCATION_API_KEY}\n    UNSPLASH_API_KEY: ${env:UNSPLASH_API_KEY}\n\nfunctions:\n  main:\n    handler: dist/serverless.handler\n    events:\n      - httpApi:\n          method: GET\n          path: /\n      - httpApi:\n          method: GET\n          path: /countries\n      - httpApi:\n          method: GET\n          path: /countries_with_details\n      - httpApi:\n          method: GET\n          path: /country/{id}\n      - httpApi:\n          method: GET\n          path: /restriction/{id}\n      - httpApi:\n          method: GET\n          path: /timezones\n      - httpApi:\n          method: GET\n          path: /visa_req\n      - httpApi:\n          method: GET\n          path: /weather\n      - httpApi:\n          method: GET\n          path: /exchange\n      - httpApi:\n          method: GET\n          path: /selected\n      - httpApi:\n          method: GET\n          path: /time\n      - httpApi:\n          method: GET\n          path: /update-countries\n  updateCountries:\n    handler: dist/serverless.updateCountries\n    events:\n      - schedule:\n          method: scheduler\n          rate:\n            - cron(0 3 2 * ? *)\n          timezone: Europe/Berlin\n  updateCountriesTimezone:\n    handler: dist/serverless.updateCountriesTimezone\n    events:\n      - schedule:\n          method: scheduler\n          rate:\n            - cron(0 5 2 * ? *)\n          timezone: Europe/Berlin\n",
+    "command": [
+      "deploy"
+    ],
+    "options": {
+      "stage": "prod",
+      "debug": "*"
+    },
+    "error": {
+      "message": "Cannot read file node_modules/class-validator/cjs/decorator/common/IsIn.js due to: EMFILE: too many open files, open '/Users/ayaz/Desktop/projects/visperto/api/node_modules/class-validator/cjs/decorator/common/IsIn.js'",
+      "stack": "ServerlessError3: Cannot read file node_modules/class-validator/cjs/decorator/common/IsIn.js due to: EMFILE: too many open files, open '/Users/ayaz/Desktop/projects/visperto/api/node_modules/class-validator/cjs/decorator/common/IsIn.js'\n    at file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:819:26669\n    at tryCatcher (file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:443:81525)\n    at Promise2._settlePromiseFromHandler (file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:621:10135)\n    at Promise2._settlePromise (file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:621:11454)\n    at Promise2._settlePromise0 (file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:621:12511)\n    at Promise2._settlePromises (file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:621:14107)\n    at _drainQueueStep (file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:450:583)\n    at _drainQueue (file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:450:479)\n    at Async._drainQueues (file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:450:716)\n    at Async.drainQueues [as _onImmediate] (file:///Users/ayaz/.serverless/releases/4.0.37/package/dist/sf-core.js:446:3279)\n    at process.processImmediate (node:internal/timers:476:21)",
+      "code": "CANNOT_READ_FILE"
+    },
+    "accessKeyV2": "<REDACTED>",
+    "accessKeyV1": "<REDACTED>",
+    "orgId": "bb2ca63f-1c06-4d6b-a8b1-0d25723631bb",
+    "orgName": "visperto",
+    "userId": "Br6ng8RWXDlcmNkWzQ",
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "userName": "visperto",
+    "subscription": null,
+    "userEmail": "ayazweb@gmail.com",
+    "serviceProviderAwsCredentials": "<REDACTED>",
+    "serviceProviderAwsAccountId": "025069821903",
+    "versionSf": "4.0.37",
+    "serviceProviderAwsCfStackName": "visperto-api-prod",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}

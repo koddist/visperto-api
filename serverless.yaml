@@ -1,0 +1,77 @@
+service: visperto-api
+useDotenv: true
+plugins:
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: eu-central-1
+  environment:
+    MONGODB_USER: ${env:MONGODB_USER}
+    MONGODB_PASSWORD: ${env:MONGODB_PASSWORD}
+    MONGODB_DB: ${env:MONGODB_DB}
+    MONGODB_CLOUD_USER: ${env:MONGODB_CLOUD_USER}
+    MONGODB_CLOUD_PASSWORD: ${env:MONGODB_CLOUD_PASSWORD}
+    LOGTAIL_TOKEN: ${env:LOGTAIL_TOKEN}
+    AMADEUS_CLIENT_ID: ${env:AMADEUS_CLIENT_ID}
+    AMADEUS_CLIENT_SECRET: ${env:AMADEUS_CLIENT_SECRET}
+    IPGEOLOCATION_API_KEY: ${env:IPGEOLOCATION_API_KEY}
+    UNSPLASH_API_KEY: ${env:UNSPLASH_API_KEY}
+
+functions:
+  main:
+    handler: dist/serverless.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /
+      - httpApi:
+          method: GET
+          path: /countries
+      - httpApi:
+          method: GET
+          path: /countries_with_details
+      - httpApi:
+          method: GET
+          path: /country/{id}
+      - httpApi:
+          method: GET
+          path: /restriction/{id}
+      - httpApi:
+          method: GET
+          path: /timezones
+      - httpApi:
+          method: GET
+          path: /visa_req
+      - httpApi:
+          method: GET
+          path: /weather
+      - httpApi:
+          method: GET
+          path: /exchange
+      - httpApi:
+          method: GET
+          path: /selected
+      - httpApi:
+          method: GET
+          path: /time
+      - httpApi:
+          method: GET
+          path: /update-countries
+  updateCountries:
+    handler: dist/serverless.updateCountries
+    events:
+      - schedule:
+          method: scheduler
+          rate:
+            - cron(0 3 2 * ? *)
+          timezone: Europe/Berlin
+  updateCountriesTimezone:
+    handler: dist/serverless.updateCountriesTimezone
+    events:
+      - schedule:
+          method: scheduler
+          rate:
+            - cron(0 5 2 * ? *)
+          timezone: Europe/Berlin
