@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { VisaCountry, VisaCountrySchema } from './schemas/visa_country.schema';
 import { MongooseModuleOptions } from '@nestjs/mongoose/dist/interfaces/mongoose-options.interface';
-import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { Country, CountrySchema } from './schemas/country.schema';
@@ -24,11 +23,7 @@ import { CountryNameService } from './services/country-name/country-name.service
   imports: [
     MongooseModule.forRoot(
       `mongodb+srv://${process.env.MONGODB_CLOUD_USER}:${process.env.MONGODB_CLOUD_PASSWORD}@private.sbcgrty.mongodb.net/?retryWrites=true&w=majority`,
-      {
-        dbName: process.env.MONGODB_DB,
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      } as MongooseModuleOptions,
+      { dbName: process.env.MONGODB_DB } as MongooseModuleOptions,
     ),
     MongooseModule.forFeature([
       { name: VisaCountry.name, schema: VisaCountrySchema },
@@ -37,7 +32,6 @@ import { CountryNameService } from './services/country-name/country-name.service
     MongooseModule.forFeature([
       { name: TravelRestrictions.name, schema: TravelRestrictionsSchema },
     ]),
-    ScheduleModule.forRoot(),
     ConfigModule.forRoot(),
     HttpModule,
   ],

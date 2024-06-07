@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
-import { Callback, Context, Handler, ScheduledEvent } from 'aws-lambda';
+import { Callback, Context, Handler } from 'aws-lambda';
 import serverlessExpress from '@codegenie/serverless-express';
 import { LogtailService } from './services/logtail/logtail.service';
 import { CountriesService } from './services/countries/countries.service';

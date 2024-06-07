@@ -1,5 +1,4 @@
 import * as puppeteer from 'puppeteer';
-import { Cron } from '@nestjs/schedule';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
@@ -171,10 +170,10 @@ export class VisaRequirementsService {
   }
 
   // Every year at 03:00 on day-of-month 1 in January, April, July, and October
-  @Cron('00 03 1 1,4,7,10 *', {
-    name: 'update_visa_reqs',
-    timeZone: 'Europe/Paris',
-  })
+  // @Cron('00 03 1 1,4,7,10 *', {
+  //   name: 'update_visa_reqs',
+  //   timeZone: 'Europe/Paris',
+  // })
   private async updateVisaReqsData(): Promise<any> {
     return await this.getAllVisaReqs()
       .then((countries) => {

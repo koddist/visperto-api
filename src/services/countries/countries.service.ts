@@ -63,19 +63,20 @@ export class CountriesService {
         });
 
         return await this.connection.db.dropCollection('countries').then(() => {
-          this.countryModel.insertMany(countriesData, (error) => {
-            if (error) {
+          this.countryModel
+            .insertMany(countriesData)
+            .then(() => {
+              return this.logtailService.logInfo(
+                'General countries data has been successfully updated.',
+              );
+            })
+            .catch((error) => {
               return this.logtailService.logError(
                 'General countries data are not updated',
                 'countries',
                 error.message,
               );
-            } else {
-              return this.logtailService.logInfo(
-                'General countries data has been successfully updated.',
-              );
-            }
-          });
+            });
         });
       }),
     );

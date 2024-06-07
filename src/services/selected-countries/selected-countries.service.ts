@@ -47,7 +47,7 @@ export class SelectedCountriesService {
   };
 
   public async getSelectedCountriesImages(): Promise<any[]> {
-    const countries = await this.countryModel.distinct('name.common');
+    const countries: any = await this.countryModel.distinct('name.common');
     const shuffledCountries = this.shuffleCountries(countries);
     const randomCountries = shuffledCountries.slice(0, 4);
 
