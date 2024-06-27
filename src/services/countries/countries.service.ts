@@ -11,7 +11,6 @@ import { Connection, Model, Promise } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { Country, CountryDocument } from '../../schemas/country.schema';
 import { LogtailService } from '../logtail/logtail.service';
-// import { Cron } from '@nestjs/schedule';
 import { CountryListItemInterface } from '../../interfaces/country-list-item.interface';
 import { CountryNameService } from '../country-name/country-name.service';
 
@@ -28,16 +27,14 @@ export class CountriesService {
     private readonly countryNameService: CountryNameService,
   ) {}
 
-  // @Cron('00 03 2 * *', {
-  //   name: 'update_countries',
-  //   timeZone: 'Europe/Paris',
-  // })
-  public async getCountries(): Promise<any> {
-    const countryNames: string[] = await this.visaCountryModel
+  // at 3:00 AM on the 2nd day of every month
+  public async updateCountries(): Promise<any> {
+    const countryNames: Promise<string>[] = await this.visaCountryModel
       .distinct('name')
       .then((countries) => {
-        return countries.map((country) =>
-          this.countryNameService.checkAlternativeCountryName(country),
+        return countries.map(
+          async (country) =>
+            await this.countryNameService.checkAlternativeCountryName(country),
         );
       });
 
@@ -68,19 +65,20 @@ export class CountriesService {
         });
 
         return await this.connection.db.dropCollection('countries').then(() => {
-          this.countryModel.insertMany(countriesData, (error) => {
-            if (error) {
-              return this.logtailService.logError(
+          this.countryModel
+            .insertMany(countriesData)
+            .then(() =>
+              this.logtailService.logInfo(
+                'General countries data has been successfully updated.',
+              ),
+            )
+            .catch((err) => {
+              this.logtailService.logError(
                 'General countries data are not updated',
                 'countries',
-                error.message,
+                err.message,
               );
-            } else {
-              return this.logtailService.logInfo(
-                'General countries data has been successfully updated.',
-              );
-            }
-          });
+            });
         });
       }),
     );
@@ -102,19 +100,8 @@ export class CountriesService {
           },
         },
         {
-          $lookup: {
-            from: 'travelRestrictions',
-            localField: 'cca2',
-            foreignField: 'area.code',
-            as: 'travelRestrictions',
-          },
-        },
-        {
           $addFields: {
             visaRequirementsId: { $arrayElemAt: ['$visaRequirements._id', 0] },
-            travelRestrictionsId: {
-              $arrayElemAt: ['$travelRestrictions._id', 0],
-            },
             name: '$name.common',
           },
         },
@@ -123,17 +110,13 @@ export class CountriesService {
             _id: 1,
             name: 1,
             visaRequirementsId: 1,
-            travelRestrictionsId: 1,
           },
         },
       ])
       .then((countries: CountryListItemInterface[]) => countries);
   }
 
-  // @Cron('00 03 2 * *', {
-  //   name: 'update_countries',
-  //   timeZone: 'Europe/Paris',
-  // })
+  // at 3:00 AM on the 2nd day of every month
   public async updateCountriesTimezone() {
     const countries = await this.countryModel.find().exec();
     const updateObservables = [];
