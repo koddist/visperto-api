@@ -2,7 +2,6 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { VisaRequirementsService } from './services/visa-requirements/visa-requirements.service';
 import { CountriesService } from './services/countries/countries.service';
 import { WeatherService } from './services/weather/weather.service';
-import { TravelRestrictionsService } from './services/travel-restrictions/travel-restrictions.service';
 import { ExchangeRateService } from './services/exchange-rate/exchange-rate.service';
 import { Country } from './schemas/country.schema';
 import { CountryListItemInterface } from './interfaces/country-list-item.interface';
@@ -14,7 +13,6 @@ export class AppController {
     private readonly visaRequirementsService: VisaRequirementsService,
     private readonly countriesService: CountriesService,
     private readonly weatherService: WeatherService,
-    private readonly travelRestrictionsService: TravelRestrictionsService,
     private readonly exchangeRateService: ExchangeRateService,
     private readonly selectedCountriesService: SelectedCountriesService,
   ) {}
@@ -37,11 +35,6 @@ export class AppController {
   @Get('country/:id')
   getCountryById(@Param('id') id: string): Promise<Country> {
     return this.countriesService.getCountryById(id);
-  }
-
-  @Get('restriction/:id')
-  getTravelRestrictionById(@Param('id') id: string) {
-    return this.travelRestrictionsService.getTravelRestrictionById(id);
   }
 
   @Get('timezones')
@@ -86,5 +79,20 @@ export class AppController {
       currentDateMinutes + targetOffset - resetOffset,
     );
     return { time: date };
+  }
+
+  @Get('update_countries_data')
+  updateCountries() {
+    return this.countriesService.updateCountries();
+  }
+
+  @Get('update_countries_visa_requirements')
+  updateVisaRequirements() {
+    return this.visaRequirementsService.updateVisaReqsData();
+  }
+
+  @Get('update_countries_timezone')
+  updateTimezone() {
+    return this.countriesService.updateCountriesTimezone();
   }
 }
