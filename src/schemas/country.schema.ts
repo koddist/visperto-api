@@ -17,6 +17,8 @@ export class Country extends Document {
     raw({
       timezone_offset: { type: Number },
       timezone_offset_with_dst: { type: Number },
+      dst_exists: { type: Boolean },
+      is_dst: { type: Boolean },
     }),
   )
   timezone: Record<string, any>;

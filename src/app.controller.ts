@@ -70,15 +70,20 @@ export class AppController {
 
   @Get('time?')
   getTime(@Query('offset') timezoneOffset: number) {
-    const hours = Number(timezoneOffset);
-    const currentDate = new Date();
-    const targetOffset = hours * 60;
-    const currentDateMinutes = currentDate.getMinutes();
-    const resetOffset = 120; // reset timezone offset to GMT0 if server's timezone is Germany
-    const date = currentDate.setMinutes(
-      currentDateMinutes + targetOffset - resetOffset,
+    const offsetMinutes = Number(timezoneOffset) * 60;
+    const now = new Date();
+    const utcTime = new Date(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      now.getUTCHours(),
+      now.getUTCMinutes(),
+      now.getUTCSeconds(),
+      now.getUTCMilliseconds(),
     );
-    return { time: date };
+    const targetTime = new Date(utcTime.getTime() + offsetMinutes * 60000);
+    const formatted = targetTime.toISOString().replace('T', ' ').slice(0, -5);
+    return { time: formatted };
   }
 
   @Get('update_countries_data')
